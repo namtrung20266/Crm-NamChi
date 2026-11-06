@@ -5,56 +5,36 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
-
 permissions:
   contents: read
   pages: write
   id-token: write
-
 concurrency:
   group: pages
   cancel-in-progress: true
-
 jobs:
   build:
     runs-on: ubuntu-24.04
-    defaults: 
-      run: 
-        working-directory: web
+    defaults: { run: { working-directory: web } }
     env:
       NEXT_PUBLIC_SUPABASE_URL: https://chivgrzljcuamycobxhc.supabase.co
       NEXT_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_Pgod2cDgaEDnj6mGKM3wKw_BvXns57w
       NEXT_PUBLIC_BASE_PATH: /Crm-NamChi
       NEXT_TELEMETRY_DISABLED: "1"
     steps:
-      - name: Checkout mã nguồn
-        uses: actions/checkout@v4
-        
-      - name: Cài đặt Node.js
-        uses: actions/setup-node@v4
-        with: 
-          node-version: 22
-          cache: npm
-          cache-dependency-path: web/package-lock.json
-          
-      - name: Cài đặt thư viện
-        run: npm ci
-        
-      - name: Build web tĩnh (Static HTML)
-        run: npm run build
-        
-      - name: Tải bản build lên GitHub
-        uses: actions/upload-pages-artifact@v3
-        with: 
-          path: web/out
-
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: web/package-lock.json }
+      - name: Bỏ file cũ thời Vercel nếu còn sót (không dùng cho trang tĩnh)
+        run: rm -rf src/middleware.ts src/lib/session.ts src/lib/supabase "src/app/(app)/actions.ts" "src/app/(app)/khach-hang/[id]" src/app/auth/confirm/route.ts src/app/dat-mat-khau/actions.ts src/app/dat-mat-khau/form.tsx src/app/login/actions.ts src/app/login/login-form.tsx
+      - run: npm ci
+      - run: npm run build
+      - uses: actions/upload-pages-artifact@v3
+        with: { path: web/out }
   deploy:
     needs: build
     runs-on: ubuntu-24.04
-    environment: 
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+    environment: { name: github-pages, url: "${{ steps.d.outputs.page_url }}" }
     steps:
-      - name: Deploy lên GitHub Pages
-        id: deployment
+      - id: d
         uses: actions/deploy-pages@v4
