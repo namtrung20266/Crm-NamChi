@@ -5,7 +5,7 @@ import { supabase, q } from "@/lib/supabase";
 import { useSession } from "@/lib/session";
 import { useCustomers } from "@/lib/data";
 import { INVOICE_TYPE } from "@/lib/status";
-import { GOODS_GROUPS } from "@/components/order-fields";
+import { useLookups, lookupLabel } from "@/lib/meta";
 import { PageHeader, Card, Badge, Empty, Field, inputCls, Skeleton } from "@/components/ui";
 import { Form, Submit, ActionButton } from "@/components/ui/form";
 import { fmtDate, fmtNumber } from "@/lib/format";
@@ -18,6 +18,7 @@ const METHOD: Record<string, string> = { percent_goods: "% tiền hàng", percen
 export default function FeesPage() {
   const s = useSession();
   const customers = useCustomers();
+  const groups = useLookups("goods_group");
   const ft = useQuery({ queryKey: ["fee-types"], queryFn: () => q<FT[]>(supabase.from("fee_types").select("id, code, name, calc_method, visible_to_customer").is("deleted_at", null).order("sort_order")) });
   const rules = useQuery({ queryKey: ["fee-rules"], queryFn: () => q<Rule[]>(supabase.from("fee_rules").select("*").order("valid_from", { ascending: false })) });
   const manage = s.can("fee.manage");
@@ -44,7 +45,7 @@ export default function FeesPage() {
                           <div>
                             <span className="font-mono font-semibold">{fmtNumber(r.sell_rate)} {unit(t.calc_method)}</span>
                             <span className="ml-2 text-xs text-muted">giá vốn: {r.cost_rate == null ? "chưa có" : `${fmtNumber(r.cost_rate)} ${unit(t.calc_method)}`}</span>
-                            <div className="text-xs text-muted">{cname(r.customer_id)} · {r.china_invoice_type ? INVOICE_TYPE[r.china_invoice_type] : "mọi loại HĐ"} · {r.goods_group ? GOODS_GROUPS[r.goods_group] ?? r.goods_group : "mọi nhóm hàng"} · {fmtDate(r.valid_from)} → {r.valid_to ? fmtDate(r.valid_to) : "nay"}{r.note ? ` · ${r.note}` : ""}</div>
+                            <div className="text-xs text-muted">{cname(r.customer_id)} · {r.china_invoice_type ? INVOICE_TYPE[r.china_invoice_type] : "mọi loại HĐ"} · {r.goods_group ? lookupLabel(groups.data, r.goods_group) : "mọi nhóm hàng"} · {fmtDate(r.valid_from)} → {r.valid_to ? fmtDate(r.valid_to) : "nay"}{r.note ? ` · ${r.note}` : ""}</div>
                           </div>
                           {live && s.can("finance.cost.write") && !r.valid_to ? <ActionButton invalidate={[["fee-rules"]]} onClick={async () => { const v = prompt(`Giá vốn mới (${unit(t.calc_method)}) cho mức ${fmtNumber(r.sell_rate)} ${unit(t.calc_method)}:`, r.cost_rate == null ? "" : String(r.cost_rate)); if (v === null || v.trim() === "") return; await q(supabase.rpc("set_fee_cost", { p_rule_id: r.id, p_cost_rate: Number(v.replace(",", ".")), p_note: "Đặt giá vốn" })); }}>Đặt giá vốn</ActionButton> : null}
                           {live ? (manage && !r.valid_to ? <ActionButton confirmText="Ngừng áp dụng mức này từ bây giờ? (đơn cũ không đổi)" invalidate={[["fee-rules"]]} onClick={() => q(supabase.from("fee_rules").update({ valid_to: new Date().toISOString() }).eq("id", r.id))}>Ngừng</ActionButton> : <Badge tone="ok">Đang áp dụng</Badge>) : <Badge>Hết hiệu lực</Badge>}
@@ -74,7 +75,7 @@ export default function FeesPage() {
               <Field label="Áp cho khách"><select name="customer_id" className={inputCls}><option value="">Mọi khách (mặc định)</option>{(customers.data ?? []).map((c) => <option key={c.id} value={c.id}>{c.code} · {c.name}</option>)}</select></Field>
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Loại hóa đơn TQ"><select name="china_invoice_type" className={inputCls}><option value="">Mọi loại</option>{Object.entries(INVOICE_TYPE).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></Field>
-                <Field label="Nhóm hàng"><select name="goods_group" className={inputCls}>{Object.entries(GOODS_GROUPS).map(([k, v]) => <option key={k} value={k}>{k ? v : "Mọi nhóm"}</option>)}</select></Field>
+                <Field label="Nhóm hàng"><select name="goods_group" className={inputCls}><option value="">Mọi nhóm</option>{(groups.data ?? []).filter((g) => g.is_active && g.code !== "chung").map((g) => <option key={g.code} value={g.code}>{g.label}</option>)}</select></Field>
                 <Field label="Mức thu khách"><input name="sell_rate" inputMode="decimal" required className={inputCls + " font-mono"} /></Field>
                 <Field label="Giá vốn" hint="Để trống nếu chưa có"><input name="cost_rate" inputMode="decimal" className={inputCls + " font-mono"} /></Field>
               </div>
