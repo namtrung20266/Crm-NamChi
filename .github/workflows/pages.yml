@@ -25,6 +25,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: npm, cache-dependency-path: web/package-lock.json }
+      - name: Bỏ file cũ thời Vercel nếu còn sót (không dùng cho trang tĩnh)
+        run: rm -rf src/middleware.ts src/lib/session.ts src/lib/supabase "src/app/(app)/actions.ts" "src/app/(app)/khach-hang/[id]" src/app/auth/confirm/route.ts src/app/dat-mat-khau/actions.ts src/app/dat-mat-khau/form.tsx src/app/login/actions.ts src/app/login/login-form.tsx
       - run: npm ci
       - run: npm run build
       - uses: actions/upload-pages-artifact@v3
