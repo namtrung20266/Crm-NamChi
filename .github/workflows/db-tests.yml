@@ -3,24 +3,35 @@ on:
   pull_request:
   push:
     branches: [main]
+
 jobs:
   pgtap:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout mã nguồn
+        uses: actions/checkout@v4
+        
       - name: Cài Postgres 16 + pgTAP
         run: |
           sudo apt-get update -q
           sudo apt-get install -y -q postgresql-16 postgresql-16-pgtap
           sudo service postgresql start
+          
       - name: Bỏ migration trùng tên cũ nếu còn sót
         run: rm -f supabase/migrations/20261106100000_provisioning.sql
+        
       - name: Chạy migration + test bảo mật
         run: sudo bash scripts/local/run_tests.sh | tee test.log && ! grep -q '^not ok' test.log
+
   secrets-scan:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
-      - uses: gitleaks/gitleaks-action@v2
-        env: { GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}" }
+      - name: Checkout mã nguồn (lấy toàn bộ lịch sử)
+        uses: actions/checkout@v4
+        with: 
+          fetch-depth: 0
+          
+      - name: Quét rò rỉ secret (Gitleaks)
+        uses: gitleaks/gitleaks-action@v2
+        env: 
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
