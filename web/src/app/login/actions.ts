@@ -39,6 +39,7 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
     // Không tiết lộ email có tồn tại hay không
     return { error: "Email hoặc mật khẩu không đúng." };
   }
+  await supabase.rpc("touch_last_login");
   redirect(safeNext(parsed.data.next));
 }
 

@@ -1,6 +1,11 @@
+# Backup hằng ngày cho gói Supabase Free (gói Free không có backup tải về được).
+# Secrets cần tạo trong GitHub > Settings > Secrets and variables > Actions:
+#   SUPABASE_DB_URL       : chuỗi kết nối Postgres (Settings > Database > Connection string, chế độ Session)
+#   RCLONE_CONF_B64       : file rclone.conf (remote tên gdrive) mã hóa base64
+#   BACKUP_PASSPHRASE     : mật khẩu mã hóa file backup
 name: db-backup
 on:
-  schedule: [{ cron: "0 18 * * *" }]
+  schedule: [{ cron: "0 18 * * *" }]   # 01:00 giờ Việt Nam
   workflow_dispatch:
 jobs:
   backup:
