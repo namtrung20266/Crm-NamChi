@@ -1,0 +1,25 @@
+name: db-backup
+on:
+  schedule: [{ cron: "0 18 * * *" }]
+  workflow_dispatch:
+jobs:
+  backup:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Cài công cụ
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q postgresql-client-16 rclone gnupg
+      - name: Dump, mã hóa, đẩy lên Google Drive, giữ 30 ngày
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          RCLONE_CONF_B64: ${{ secrets.RCLONE_CONF_B64 }}
+          PASS: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.config/rclone && echo "$RCLONE_CONF_B64" | base64 -d > ~/.config/rclone/rclone.conf
+          F="namchi_$(date -u +%Y%m%d_%H%M).dump"
+          /usr/lib/postgresql/16/bin/pg_dump "$DB_URL" --format=custom --no-owner --schema=public --schema=app --schema=audit --schema=auth -f "$F"
+          gpg --batch --yes --pinentry-mode loopback --passphrase "$PASS" -c "$F"
+          rclone copy "$F.gpg" gdrive:namchi-backup/db/
+          rclone delete gdrive:namchi-backup/db/ --min-age 30d
