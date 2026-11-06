@@ -27,7 +27,7 @@ export function OrderChat({ orderId, height = "60vh" }: { orderId: string; heigh
   const [err, setErr] = useState<string | null>(null);
   const end = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    const ch = supabase.channel(`msg-${orderId}`).on("postgres_changes", { event: "INSERT", schema: "public", table: "order_messages", filter: `order_id=eq.${orderId}` },
+    const ch = supabase.channel(`msg-${orderId}-${Math.random().toString(36).slice(2)}`).on("postgres_changes", { event: "INSERT", schema: "public", table: "order_messages", filter: `order_id=eq.${orderId}` },
       () => qc.invalidateQueries({ queryKey: key })).subscribe();
     return () => { supabase.removeChannel(ch); };
     // eslint-disable-next-line react-hooks/exhaustive-deps

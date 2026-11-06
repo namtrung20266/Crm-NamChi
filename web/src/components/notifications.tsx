@@ -19,7 +19,7 @@ export function NotificationBell({ align = "left" }: { align?: "left" | "right" 
   const list = useQuery({ queryKey: ["notifications"], refetchInterval: 30_000, refetchOnWindowFocus: true,
     queryFn: () => q<N[]>(supabase.from("notifications").select("id, kind, title, body, link, created_at, read_at").order("created_at", { ascending: false }).limit(40)) });
   useEffect(() => {
-    const ch = supabase.channel(`notif-${s.user_id}`)
+    const ch = supabase.channel(`notif-${s.user_id}-${Math.random().toString(36).slice(2)}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${s.user_id}` }, () => {
         qc.invalidateQueries({ queryKey: ["notifications"] });
         qc.invalidateQueries({ queryKey: ["order-progress"] });
