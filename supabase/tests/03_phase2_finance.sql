@@ -54,7 +54,8 @@ select is((select count(*)::int from public.orders), 1, 'F13 Sen Vàng chỉ th�
 select is((select count(*)::int from public.bank_receipts), 0, 'F14 công ty con không xem giao dịch tiền cấp Lanchi');
 select ok((select count(*) from public.order_statement_lines) > 0 and (select count(*) from public.order_costs) = 0, 'F15 khách thấy dòng phí, không thấy giá vốn');
 select lives_ok($$select public.confirm_statement((select id from public.order_statements where order_id = t.id('O1') and status = 'active'))$$, 'F16 khách xác nhận phiếu');
-select is(t.affected($$update public.orders set goods_cny = 1 where id = t.id('O1')$$), 0, 'F17 khách không sửa đơn sau khi gửi');
+select is((t.affected($$update public.orders set goods_cny = 1, fx_rate = 1, internal_note = 'x' where id = t.id('O1')$$) * 0
+           + (select fx_rate from public.orders where id = t.id('O1')))::int, 4055, 'F17 khách sửa đơn nháp nhưng không đổi được tỷ giá/trường nội bộ');
 select t.logout();
 
 select t.login(t.id('wh'));

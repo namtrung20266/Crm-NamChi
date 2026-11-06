@@ -28,7 +28,7 @@ export default function FeesPage() {
 
   return (
     <>
-      <PageHeader eyebrow="Tài chính" title="Biểu phí" desc="Mỗi mức phí có ngày hiệu lực. Đơn lấy mức đang hiệu lực tại ngày tạo đơn, nên đổi biểu phí không làm sai đơn cũ." />
+      <PageHeader eyebrow="Tài chính" title="Biểu phí" desc="Giá bán và giá vốn từng loại phí, có ngày hiệu lực. Đặt giá vốn tạo phiên bản mới, giữ giá bán. Đơn lấy mức đang hiệu lực tại ngày tạo đơn, nên đổi biểu phí không làm sai đơn cũ." />
       <div className="grid gap-5 xl:grid-cols-[1.6fr_1fr]">
         <div className="space-y-4">
           {ft.isLoading ? <Skeleton /> : (ft.data ?? []).map((t) => {
@@ -46,6 +46,7 @@ export default function FeesPage() {
                             <span className="ml-2 text-xs text-muted">giá vốn: {r.cost_rate == null ? "chưa có" : `${fmtNumber(r.cost_rate)} ${unit(t.calc_method)}`}</span>
                             <div className="text-xs text-muted">{cname(r.customer_id)} · {r.china_invoice_type ? INVOICE_TYPE[r.china_invoice_type] : "mọi loại HĐ"} · {r.goods_group ? GOODS_GROUPS[r.goods_group] ?? r.goods_group : "mọi nhóm hàng"} · {fmtDate(r.valid_from)} → {r.valid_to ? fmtDate(r.valid_to) : "nay"}{r.note ? ` · ${r.note}` : ""}</div>
                           </div>
+                          {live && s.can("finance.cost.write") && !r.valid_to ? <ActionButton invalidate={[["fee-rules"]]} onClick={async () => { const v = prompt(`Giá vốn mới (${unit(t.calc_method)}) cho mức ${fmtNumber(r.sell_rate)} ${unit(t.calc_method)}:`, r.cost_rate == null ? "" : String(r.cost_rate)); if (v === null || v.trim() === "") return; await q(supabase.rpc("set_fee_cost", { p_rule_id: r.id, p_cost_rate: Number(v.replace(",", ".")), p_note: "Đặt giá vốn" })); }}>Đặt giá vốn</ActionButton> : null}
                           {live ? (manage && !r.valid_to ? <ActionButton confirmText="Ngừng áp dụng mức này từ bây giờ? (đơn cũ không đổi)" invalidate={[["fee-rules"]]} onClick={() => q(supabase.from("fee_rules").update({ valid_to: new Date().toISOString() }).eq("id", r.id))}>Ngừng</ActionButton> : <Badge tone="ok">Đang áp dụng</Badge>) : <Badge>Hết hiệu lực</Badge>}
                         </li>
                       );

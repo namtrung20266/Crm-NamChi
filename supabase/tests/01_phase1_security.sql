@@ -21,8 +21,8 @@ begin
   execute 'reset role';
   perform set_config('request.jwt.claims', '', true);
 end $$;
-grant usage on schema t to authenticated, anon;
-grant execute on all functions in schema t to authenticated, anon;
+grant usage on schema t to authenticated, anon, service_role;
+grant execute on all functions in schema t to authenticated, anon, service_role;
 
 create function t.affected(p_sql text) returns int language plpgsql as $f$
 declare n int;
@@ -33,7 +33,7 @@ begin
 end $f$;
 
 create temp table ids (k text primary key, v uuid);
-grant select on ids to authenticated, anon;
+grant select on ids to authenticated, anon, service_role;
 insert into ids values
   ('admin', gen_random_uuid()), ('manager', gen_random_uuid()), ('cs_a', gen_random_uuid()),
   ('cs_b', gen_random_uuid()), ('accountant', gen_random_uuid()), ('xnk', gen_random_uuid()),
@@ -133,16 +133,18 @@ select lives_ok($$update public.profiles set full_name = 'Sen Vàng KT' where us
 select throws_ok($$insert into public.attachments (customer_id, entity_id, entity_type, entity_ref_id, storage_key, file_name, mime_type, size_bytes, visibility)
                    values (t.id('LC'), t.id('TV'), 'order', gen_random_uuid(), 'x1', 'a.png', 'image/png', 10, 'customer')$$,
                  '42501', null, 'B20 Sen Vàng không upload file vào Thịnh Vượng');
-select lives_ok($$insert into public.attachments (customer_id, entity_id, entity_type, entity_ref_id, storage_key, file_name, mime_type, size_bytes, visibility)
-                  values (t.id('LC'), t.id('SV'), 'order', gen_random_uuid(), 'x2', 'a.png', 'image/png', 10, 'customer')$$,
-                'B21 Sen Vàng upload file cho công ty mình được');
 select throws_ok($$insert into public.attachments (customer_id, entity_id, entity_type, entity_ref_id, storage_key, file_name, mime_type, size_bytes, visibility)
-                   values (t.id('LC'), t.id('SV'), 'order', gen_random_uuid(), 'x3', 'big.pdf', 'application/pdf', 21000000, 'customer')$$,
-                 '23514', null, 'B22 file > 20 MB bị chặn');
+                  values (t.id('LC'), t.id('SV'), 'order', gen_random_uuid(), 'x2', 'a.png', 'image/png', 10, 'customer')$$,
+                 '42501', null, 'B21 người dùng không tự ghi bảng file (chỉ Edge Function sau khi đẩy Drive)');
+select t.logout();
+set local role service_role;
+select throws_ok($$insert into public.attachments (customer_id, entity_id, entity_type, entity_ref_id, storage_key, file_name, mime_type, size_bytes, visibility)
+                   values (t.id('LC'), t.id('SV'), 'order', gen_random_uuid(), 'x3', 'big.pdf', 'application/pdf', 60000000, 'customer')$$,
+                 '23514', null, 'B22 file > 50 MB bị chặn');
 select throws_ok($$insert into public.attachments (customer_id, entity_id, entity_type, entity_ref_id, storage_key, file_name, mime_type, size_bytes, visibility)
                    values (t.id('LC'), t.id('SV'), 'order', gen_random_uuid(), 'x4', 'm.xlsm', 'application/vnd.ms-excel.sheet.macroEnabled.12', 100, 'customer')$$,
                  '23514', null, 'B23 file Excel có macro (.xlsm) bị chặn');
-select t.logout();
+reset role;
 
 -- ---------------------------------------------------------------------
 -- C. CSKH theo phân công

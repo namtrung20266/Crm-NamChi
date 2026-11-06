@@ -7,10 +7,16 @@ import { useSession } from "@/lib/session";
 import { ORDER_STATUS } from "@/lib/status";
 import { Card, Badge, Skeleton } from "@/components/ui";
 import { vnd, fmtDate } from "@/lib/format";
+import { AdminDashboard } from "@/components/admin-dashboard";
 
 type O = { id: string; code: string; status: string; created_at: string; goods_desc: string | null; customer_entities: { legal_name: string } | null };
 
 export default function HomePage() {
+  const s = useSession();
+  return s.isStaff ? <AdminDashboard /> : <CustomerHome />;
+}
+
+function CustomerHome() {
   const s = useSession();
   const showMoney = !s.isStaff || s.can("finance.read");
   const orders = useQuery({ queryKey: ["home-orders"], queryFn: () => q<O[]>(supabase.from("orders").select("id, code, status, created_at, goods_desc, customer_entities(legal_name)").order("created_at", { ascending: false }).limit(400)) });

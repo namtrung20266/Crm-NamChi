@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useSession } from "@/lib/session";
 import { supabase } from "@/lib/supabase";
 import { NAV } from "./nav";
+import { NotificationBell } from "./notifications";
 
 function Icon({ d }: { d: string }) {
   return <svg viewBox="0 0 24 24" className="h-[18px] w-[18px] shrink-0" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d={d} /></svg>;
@@ -26,10 +27,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <aside className="glass sticky top-0 hidden h-dvh flex-col border-r border-line/80 lg:flex">
         <div className="flex items-center gap-3 px-5 py-5">
           <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-brand font-mono text-xs font-bold text-white shadow-[0_8px_20px_-8px_var(--brand)]">NT</span>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <div className="text-[11px] font-semibold tracking-[0.24em] text-brand">NAMCHI</div>
             <div className="truncate text-xs text-muted" title={scope}>{scope}</div>
           </div>
+          <NotificationBell />
         </div>
         <nav className="flex-1 space-y-5 overflow-y-auto px-3 pb-4" aria-label="Điều hướng chính">
           {groups.map((g) => (
@@ -56,7 +58,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-brand font-mono text-[11px] font-bold text-white">NT</span>
           <div className="min-w-0"><div className="truncate text-sm font-semibold">{scope}</div></div>
         </div>
-        <button onClick={logout} className="h-11 px-2 text-sm font-medium text-muted">Thoát</button>
+        <div className="flex items-center gap-1"><NotificationBell align="right" /><button onClick={logout} className="h-11 px-2 text-sm font-medium text-muted">Thoát</button></div>
       </header>
 
       <main key={path} className="page-enter mx-auto w-full max-w-7xl px-4 pb-28 pt-5 lg:px-8 lg:pb-12 lg:pt-8">{children}</main>

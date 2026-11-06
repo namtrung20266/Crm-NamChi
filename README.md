@@ -67,3 +67,14 @@ npm run dev
 ```
 
 Triển khai: đẩy lên `main`, workflow `deploy-pages` tự build và đưa lên GitHub Pages.
+
+## Cập nhật 07/11/2026 – Trang quản trị & luồng đơn mới
+
+- Dashboard quản trị (`/`): KPI, đơn theo bước + quá hạn SLA, cảnh báo cần xử lý, xu hướng 12 tuần, theo công ty con, theo CSKH, bảng toàn bộ đơn.
+- Đơn hàng: form tạo 5 phần + ước tính phí; chi tiết đơn theo tab; trao đổi khách ↔ Nam Trung; trạng thái đổi qua RPC có lý do; tự đồng bộ theo dữ liệu.
+- Ví theo công ty con: nạp kèm ảnh, kế toán duyệt, cọc/thanh toán trừ ví, đảo bút toán.
+- Giá vốn: đặt ở Biểu phí (phiên bản mới) và từng khoản trên đơn; lợi nhuận ưu tiên nhập tay → trả NCC thực tế → biểu phí.
+- Hóa đơn xuất đủ/thiếu theo dòng hàng ngay trên đơn.
+- Cấu hình hệ thống: tham số, danh mục, trạng thái đơn, đối tác.
+- File lưu Google Drive qua Edge Function `drive-files` (cần 4 secrets: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REFRESH_TOKEN, DRIVE_ROOT_FOLDER_ID).
+- Test DB: 169/169 (`scripts/local/run_tests.sh`).
