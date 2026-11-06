@@ -34,7 +34,7 @@ export function AuthFrame({ title, subtitle, children }: { title: string; subtit
           </ul>
         </div>
 
-        <svg viewBox="0 0 640 470" className="auth-map" role="presentation">
+        <svg viewBox="0 0 720 470" className="auth-map" role="presentation">
           <defs>
             <linearGradient id="rt" x1="0" y1="1" x2="1" y2="0">
               <stop offset="0" stopColor="#e8590c" stopOpacity=".15" />

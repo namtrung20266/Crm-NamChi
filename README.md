@@ -4,13 +4,14 @@ Tài liệu thiết kế gốc: "NAMCHI ERP – Bộ tài liệu thiết kế" (
 
 ## Trạng thái
 
-| Giai đoạn 1 – Bước | Nội dung | Trạng thái |
+| Giai đoạn | Nội dung | Trạng thái |
 | --- | --- | --- |
-| 1 | Repo, CI test database, quét lộ khóa, backup hằng ngày | Xong |
-| 2 | Migration 14 bảng + RLS 3 mức phạm vi + 45 test bảo mật | Xong, 45/45 đạt |
-| 3 | Khung giao diện Next.js + đăng nhập (thư mục web/) | Xong, build đạt |
-| 4 | 9 màn hình Giai đoạn 1 | Chưa |
-| 5 | Nghiệm thu với tài khoản Lanchi + 2 công ty con | Chưa |
+| 1 | Tài khoản, khách hàng, công ty con, phân quyền, cài đặt, nhật ký | Đang chạy |
+| 2 | Đơn hàng, biểu phí, phiếu tính tiền 3 bản, tiền vào, phân bổ L1/L2, thanh toán NCC, công nợ, lợi nhuận | Đang chạy |
+| 3–5 | Kho, khai báo, list bốc/xe, chứng từ, hóa đơn, khiếu nại | Kế hoạch (docs/FLOWS.md mục 6) |
+
+Trang web: https://namtrung20266.github.io/Crm-NamChi/ (GitHub Pages, tự build từ thư mục `web/`).
+Bản đồ quy trình: `docs/FLOWS.md`. Bản đồ code: `docs/graph/graph.html`.
 
 ## Cấu trúc
 
@@ -63,4 +64,4 @@ npm ci
 npm run dev
 ```
 
-Triển khai thử: Vercel → Import repo → Root Directory = `web` → thêm 2 biến môi trường trên.
+Triển khai: đẩy lên `main`, workflow `deploy-pages` tự build và đưa lên GitHub Pages.

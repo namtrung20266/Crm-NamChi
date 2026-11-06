@@ -1,9 +1,12 @@
-import { getSession } from "@/lib/session";
-import { AppShell } from "@/components/app-shell";
+"use client";
 
-export const dynamic = "force-dynamic";
+import { AuthGate } from "@/lib/session";
+import { AppShell, ShellSkeleton } from "@/components/app-shell";
 
-export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const session = await getSession();
-  return <AppShell session={session}>{children}</AppShell>;
+export default function AppLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <AuthGate fallback={<ShellSkeleton />}>
+      <AppShell>{children}</AppShell>
+    </AuthGate>
+  );
 }

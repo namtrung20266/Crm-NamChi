@@ -3,4 +3,8 @@ const d = new Intl.DateTimeFormat("vi-VN", { dateStyle: "short", timeZone: "Asia
 const n = new Intl.NumberFormat("vi-VN");
 export const fmtDateTime = (v?: string | null) => (v ? dt.format(new Date(v)) : "—");
 export const fmtDate = (v?: string | null) => (v ? d.format(new Date(v)) : "—");
-export const fmtNumber = (v?: number | null) => (v == null ? "—" : n.format(v));
+export const fmtNumber = (v?: number | string | null) => (v == null || v === "" ? "—" : n.format(Number(v)));
+export const vnd = (v?: number | string | null) => (v == null ? "—" : `${n.format(Number(v))} đ`);
+export const parseMoney = (s: FormDataEntryValue | null) => Number(String(s ?? "").replace(/[^\d-]/g, "") || 0);
+export const parseNum = (s: FormDataEntryValue | null) => Number(String(s ?? "").replace(/\s/g, "").replace(",", ".") || 0);
+export const str = (s: FormDataEntryValue | null) => { const v = String(s ?? "").trim(); return v === "" ? null : v; };

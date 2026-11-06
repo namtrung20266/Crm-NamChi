@@ -1,67 +1,58 @@
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
-import { getSession, can } from "@/lib/session";
-import { PageHeader, Card } from "@/components/ui";
-import { togglePermission } from "../actions";
+"use client";
 
-const MODULE = { customer: "Khách hàng", system: "Hệ thống", file: "File", finance: "Tài chính" } as Record<string, string>;
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { supabase, q } from "@/lib/supabase";
+import { useSession } from "@/lib/session";
+import { PageHeader, Card, Empty, Skeleton } from "@/components/ui";
 
-export default async function PermissionsPage() {
-  const s = await getSession();
-  if (!can(s, "role.manage")) redirect("/");
-  const supabase = await createClient();
-  const [{ data: roles }, { data: perms }, { data: rp }] = await Promise.all([
-    supabase.from("roles").select("id, code, name, user_type").order("user_type", { ascending: false }).order("name"),
-    supabase.from("permissions").select("id, code, module, description").order("module").order("code"),
-    supabase.from("role_permissions").select("role_id, permission_id"),
-  ]);
-  const has = new Set((rp ?? []).map((x) => `${x.role_id}:${x.permission_id}`));
-
+export default function PermissionsPage() {
+  const s = useSession();
+  const qc = useQueryClient();
+  const data = useQuery({ queryKey: ["perm-matrix"], queryFn: async () => {
+    const [roles, perms, rp] = await Promise.all([
+      q<{ id: string; code: string; name: string; user_type: string }[]>(supabase.from("roles").select("id, code, name, user_type").order("user_type", { ascending: false }).order("name")),
+      q<{ id: string; code: string; module: string; description: string }[]>(supabase.from("permissions").select("id, code, module, description").order("module").order("code")),
+      q<{ role_id: string; permission_id: string }[]>(supabase.from("role_permissions").select("role_id, permission_id")),
+    ]);
+    return { roles, perms, has: new Set(rp.map((x) => `${x.role_id}:${x.permission_id}`)) };
+  } });
+  if (!s.can("role.manage")) return <Empty title="Bạn không có quyền phân quyền" />;
+  if (!data.data) return <Skeleton rows={8} />;
+  const { roles, perms, has } = data.data;
+  const toggle = async (roleId: string, permId: string, on: boolean) => {
+    const r = on
+      ? await supabase.from("role_permissions").insert({ role_id: roleId, permission_id: permId })
+      : await supabase.from("role_permissions").delete().eq("role_id", roleId).eq("permission_id", permId);
+    if (r.error) alert(r.error.message);
+    qc.invalidateQueries({ queryKey: ["perm-matrix"] });
+  };
   return (
     <>
-      <PageHeader eyebrow="Hệ thống" title="Phân quyền" desc="Bấm ô để bật/tắt quyền cho vai trò. Thay đổi có hiệu lực ngay với mọi tài khoản thuộc vai trò đó và được ghi nhật ký." />
+      <PageHeader eyebrow="Hệ thống" title="Phân quyền" desc="Bấm ô để bật/tắt. Có hiệu lực ngay với mọi tài khoản thuộc vai trò, được ghi nhật ký." />
       <Card>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[860px] text-sm">
-            <thead>
-              <tr className="border-b border-line">
-                <th className="sticky left-0 bg-white px-3 py-2 text-left text-xs font-medium uppercase text-muted">Quyền</th>
-                {(roles ?? []).map((r) => (
-                  <th key={r.id} className="px-2 py-2 text-center text-xs font-semibold">
-                    <div className={r.user_type === "customer" ? "text-[#c81e1e]" : "text-brand-strong"}>{r.name}</div>
-                  </th>
-                ))}
-              </tr>
-            </thead>
+          <table className="w-full min-w-[900px] text-sm">
+            <thead><tr className="border-b border-line">
+              <th className="sticky left-0 bg-white px-3 py-2 text-left text-xs font-medium uppercase text-muted">Quyền</th>
+              {roles.map((r) => <th key={r.id} className={`px-2 py-2 text-center text-xs font-semibold ${r.user_type === "customer" ? "text-[#c81e1e]" : "text-brand-strong"}`}>{r.name}</th>)}
+            </tr></thead>
             <tbody>
-              {(perms ?? []).map((p) => (
+              {perms.map((p) => (
                 <tr key={p.id} className="border-b border-line/70">
-                  <td className="sticky left-0 bg-white px-3 py-2.5">
-                    <div className="font-medium">{p.description}</div>
-                    <div className="font-mono text-[11px] text-muted">{MODULE[p.module] ?? p.module} · {p.code}</div>
-                  </td>
-                  {(roles ?? []).map((r) => {
+                  <td className="sticky left-0 bg-white px-3 py-2.5"><div className="font-medium">{p.description}</div><div className="font-mono text-[11px] text-muted">{p.code}</div></td>
+                  {roles.map((r) => {
                     const on = has.has(`${r.id}:${p.id}`);
-                    const lockSelf = r.code === "admin" && (p.code === "role.manage" || p.code === "user.manage");
-                    return (
-                      <td key={r.id} className="px-2 py-2 text-center">
-                        <form action={togglePermission}>
-                          <input type="hidden" name="role_id" value={r.id} /><input type="hidden" name="permission_id" value={p.id} />
-                          <input type="hidden" name="on" value={String(!on)} />
-                          <button disabled={lockSelf} aria-label={`${on ? "Tắt" : "Bật"} ${p.code} cho ${r.name}`}
-                            className={`inline-flex h-7 w-7 items-center justify-center rounded-md border text-xs font-bold transition ${on ? "border-brand bg-brand text-white" : "border-line bg-white text-transparent hover:border-brand/50"} ${lockSelf ? "opacity-60" : ""}`}>
-                            ✓
-                          </button>
-                        </form>
-                      </td>
-                    );
+                    const lock = r.code === "admin" && (p.code === "role.manage" || p.code === "user.manage");
+                    return <td key={r.id} className="px-2 py-2 text-center">
+                      <button disabled={lock} onClick={() => toggle(r.id, p.id, !on)} aria-label={`${on ? "Tắt" : "Bật"} ${p.code} cho ${r.name}`}
+                        className={`inline-flex h-7 w-7 items-center justify-center rounded-md border text-xs font-bold transition ${on ? "border-brand bg-brand text-white" : "border-line bg-white text-transparent hover:border-brand/50"} ${lock ? "opacity-60" : ""}`}>✓</button>
+                    </td>;
                   })}
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-        <p className="mt-4 text-xs text-muted">Quyền quản lý người dùng và phân quyền của Admin bị khóa để tránh tự khóa mình khỏi hệ thống.</p>
       </Card>
     </>
   );

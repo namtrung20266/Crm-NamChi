@@ -23,6 +23,7 @@
   --color-surface: #fafaf9;
   --color-danger: #dc2626;
   --color-ok: #15803d;
+  --color-info: #2563eb;
   --font-sans: "Be Vietnam Pro", "Segoe UI", system-ui, -apple-system, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 }
@@ -31,7 +32,11 @@ html {
   -webkit-text-size-adjust: 100%;
 }
 body {
-  background: var(--color-surface);
+  background:
+    radial-gradient(1200px 600px at 100% -10%, color-mix(in srgb, var(--brand) 7%, transparent), transparent 60%),
+    radial-gradient(900px 500px at -10% 110%, rgba(28,25,23,.05), transparent 60%),
+    var(--color-surface);
+  background-attachment: fixed;
   color: var(--color-ink);
   font-family: var(--font-sans);
 }
@@ -55,7 +60,7 @@ body {
   background: radial-gradient(closest-side, rgba(232,89,12,.38), rgba(232,89,12,.08) 55%, transparent);
   animation: auth-breathe 9s ease-in-out infinite;
 }
-.auth-map { position: absolute; z-index: 0; right: -10px; top: 6%; width: min(680px, 105%); height: auto; opacity: .95; }
+.auth-map { position: absolute; z-index: 0; right: -10px; top: 6%; width: min(720px, 100%); height: auto; opacity: .95; }
 @media (max-width: 1023px) { .auth-map { top: auto; bottom: -30px; right: -60px; width: 520px; opacity: .55; } }
 
 .auth-headline {
@@ -112,3 +117,13 @@ body {
   .auth-flow, .auth-ping, .auth-glow, .auth-chip, .auth-card { animation: none; }
   .auth-truck { display: none; }
 }
+
+/* ======================= Hiệu ứng nhẹ, hiện đại ======================= */
+.page-enter { animation: page-in .28s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes page-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.glass { background: color-mix(in srgb, #fff 78%, transparent); backdrop-filter: saturate(1.4) blur(14px); -webkit-backdrop-filter: saturate(1.4) blur(14px); }
+.card { background: #fff; border: 1px solid var(--color-line); border-radius: 16px; box-shadow: 0 1px 0 rgba(255,255,255,.8) inset, 0 12px 32px -24px rgba(28,25,23,.35); }
+.skeleton { background: linear-gradient(90deg, #f1efed 0%, #f8f7f6 50%, #f1efed 100%); background-size: 200% 100%; animation: shimmer 1.2s linear infinite; border-radius: 8px; }
+@keyframes shimmer { to { background-position: -200% 0; } }
+.nav-active { background: var(--brand-soft); color: var(--brand-strong); box-shadow: inset 3px 0 0 var(--brand); }
+@media (prefers-reduced-motion: reduce) { .page-enter, .skeleton { animation: none; } }

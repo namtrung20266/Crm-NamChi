@@ -2,19 +2,30 @@
 // Tạo tài khoản mới hoặc tạo link đặt lại mật khẩu, KHÔNG gửi email:
 // trả về token để ứng dụng dựng link, người mời gửi link qua Zalo/email.
 // Khóa service role chỉ tồn tại trong môi trường Edge Function của Supabase.
-import { createClient } from "npm:@supabase/supabase-js@2.45.4";
+import { createClient } from "npm:@supabase/supabase-js@2.118.0";
 
 const URL_ = Deno.env.get("SUPABASE_URL")!;
 const ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SERVICE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-const json = (status: number, body: unknown) =>
-  new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
+// Chỉ cho phép gọi từ trang của Nam Trung
+const ALLOWED_ORIGINS = ["https://namtrung20266.github.io", "http://localhost:3000"];
+
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const UUID_RE = /^[0-9a-f-]{36}$/i;
 
 Deno.serve(async (req) => {
+  const origin = req.headers.get("Origin") ?? "";
+  const CORS: Record<string, string> = ALLOWED_ORIGINS.includes(origin)
+    ? { "Access-Control-Allow-Origin": origin, "Vary": "Origin",
+        "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info",
+        "Access-Control-Allow-Methods": "POST, OPTIONS" }
+    : {};
+  // phản hồi theo từng request (không dùng biến dùng chung giữa các request)
+  const json = (status: number, body: unknown) =>
+    new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json", ...CORS } });
+  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS });
   if (req.method !== "POST") return json(405, { error: "Chỉ chấp nhận POST" });
   const auth = req.headers.get("Authorization") ?? "";
   if (!auth.startsWith("Bearer ")) return json(401, { error: "Chưa đăng nhập" });

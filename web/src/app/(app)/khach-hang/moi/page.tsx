@@ -1,21 +1,31 @@
-import { redirect } from "next/navigation";
-import { getSession, can } from "@/lib/session";
-import { PageHeader, Card } from "@/components/ui";
-import { ActionForm, SubmitButton } from "@/components/ui/form";
-import { CustomerFields } from "@/components/customer-form";
-import { createCustomer } from "../../actions";
+"use client";
 
-export default async function NewCustomerPage() {
-  const s = await getSession();
-  if (!can(s, "customer.write")) redirect("/khach-hang");
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
+import { useSession } from "@/lib/session";
+import { PageHeader, Card, Empty } from "@/components/ui";
+import { Form, Submit } from "@/components/ui/form";
+import { CustomerFields, readCustomer } from "@/components/customer-form";
+import { viError } from "@/lib/errors";
+
+export default function NewCustomerPage() {
+  const s = useSession();
+  const router = useRouter();
+  if (!s.can("customer.write")) return <Empty title="Bạn không có quyền thêm khách hàng" />;
   return (
     <>
-      <PageHeader eyebrow="CRM · Khách hàng" title="Thêm khách hàng" desc="Sau khi tạo, thêm công ty con nhận hóa đơn, người liên hệ, CSKH phụ trách và cấp tài khoản." />
+      <PageHeader eyebrow="CRM · Khách hàng" title="Thêm khách hàng" />
       <Card>
-        <ActionForm action={createCustomer}>
+        <Form invalidate={[["customers"]]} onSubmit={async (f) => {
+          const p = readCustomer(f);
+          if ("error" in p) return { error: p.error };
+          const { data, error } = await supabase.from("customers").insert(p.data).select("id").single();
+          if (error) return { error: viError(error) };
+          router.push(`/khach-hang/chi-tiet/?id=${data.id}`);
+        }}>
           <CustomerFields />
-          <div className="flex justify-end"><SubmitButton>Tạo khách hàng</SubmitButton></div>
-        </ActionForm>
+          <div className="flex justify-end"><Submit>Tạo khách hàng</Submit></div>
+        </Form>
       </Card>
     </>
   );

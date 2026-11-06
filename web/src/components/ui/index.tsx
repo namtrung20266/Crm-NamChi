@@ -15,7 +15,7 @@ export function PageHeader({ eyebrow, title, desc, actions }: { eyebrow?: string
 
 export function Card({ title, actions, children, className = "" }: { title?: string; actions?: React.ReactNode; children: React.ReactNode; className?: string }) {
   return (
-    <section className={`rounded-xl border border-line bg-white ${className}`}>
+    <section className={`card ${className}`}>
       {title ? (
         <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-3.5">
           <h2 className="text-sm font-semibold">{title}</h2>
@@ -58,6 +58,7 @@ const tones = {
   warn: "bg-amber-50 text-amber-700 border-amber-200",
   danger: "bg-danger/10 text-danger border-danger/20",
   brand: "bg-brand-soft text-brand-strong border-brand/20",
+  info: "bg-blue-50 text-blue-700 border-blue-200",
 };
 export function Badge({ tone = "neutral", children }: { tone?: keyof typeof tones; children: React.ReactNode }) {
   return <span className={`inline-flex items-center rounded-md border px-1.5 py-0.5 text-[11px] font-medium ${tones[tone]}`}>{children}</span>;
@@ -78,6 +79,10 @@ export function Notice({ tone = "danger", children }: { tone?: "danger" | "ok"; 
 }
 
 // Bảng trên máy tính, thẻ trên điện thoại
+export function Skeleton({ rows = 4 }: { rows?: number }) {
+  return <div className="space-y-2">{Array.from({ length: rows }).map((_, i) => <div key={i} className="skeleton h-10" />)}</div>;
+}
+
 export function DataList<T>({ rows, columns, mobile, empty }: {
   rows: T[];
   columns: { head: string; cell: (r: T) => React.ReactNode; className?: string }[];

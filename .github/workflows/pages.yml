@@ -1,0 +1,38 @@
+# Build trang tĩnh (web/) và đưa lên GitHub Pages mỗi khi đẩy code lên main.
+# Biến dưới đây là khóa CÔNG KHAI (publishable) – an toàn vì dữ liệu do RLS bảo vệ.
+name: deploy-pages
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    defaults: { run: { working-directory: web } }
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: https://chivgrzljcuamycobxhc.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_Pgod2cDgaEDnj6mGKM3wKw_BvXns57w
+      NEXT_PUBLIC_BASE_PATH: /Crm-NamChi
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: web/package-lock.json }
+      - run: npm ci
+      - run: npm run build
+      - uses: actions/upload-pages-artifact@v3
+        with: { path: web/out }
+  deploy:
+    needs: build
+    runs-on: ubuntu-24.04
+    environment: { name: github-pages, url: "${{ steps.d.outputs.page_url }}" }
+    steps:
+      - id: d
+        uses: actions/deploy-pages@v4
