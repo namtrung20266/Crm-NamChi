@@ -11,6 +11,8 @@ import { ORDER_STATUS, INVOICE_TYPE, STATEMENT_KIND, DELAY } from "@/lib/status"
 import { PageHeader, Card, Badge, Empty, Field, inputCls, LinkButton, Skeleton, btn } from "@/components/ui";
 import { Form, Submit, ActionButton } from "@/components/ui/form";
 import { OrderFields, readOrder, GOODS_GROUPS } from "@/components/order-fields";
+import { OrderPackages } from "@/components/order-packages";
+import { OrderItems } from "@/components/order-items";
 import { vnd, fmtNumber, fmtDate, fmtDateTime } from "@/lib/format";
 import { viError } from "@/lib/errors";
 
@@ -131,6 +133,9 @@ function Detail() {
               ) : null}
             </Card>
           ) : null}
+
+          <OrderPackages orderId={o.id} />
+          <OrderItems orderId={o.id} />
 
           {/* Thông tin đơn */}
           <Card title="Thông tin đơn" actions={staffWrite ? <button className={btn.ghost + " h-8 px-3 text-xs"} onClick={() => setEdit((v) => !v)}>{edit ? "Đóng" : "Sửa"}</button> : null}>

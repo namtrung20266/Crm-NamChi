@@ -97,10 +97,34 @@ Công thức (hàm `public.build_statement`):
 
 Quy trình sửa an toàn: tạo migration mới trong `supabase/migrations` → viết test trong `supabase/tests` → `scripts/local/run_tests.sh` xanh → đẩy lên `main` (Pages tự build) → áp migration lên Supabase.
 
-## 6. Lộ trình còn lại
+## 6. Kho, hải quan, hóa đơn, khiếu nại (Giai đoạn 3–5 – đã có)
 
-| Giai đoạn | Nội dung | Bảng dự kiến |
+```mermaid
+flowchart LR
+  K[Kho TQ nhận kiện\nD×R×C/6000] --> D[Dòng khai báo\nCSKH lập → XNK xác nhận]
+  D --> LB[List bốc\nkhông vượt SL, 1 kiện 1 list]
+  LB --> LX[List xe → Chốt\nsnapshot + mã băm]
+  LX --> F[File khai báo APT · Invoice · Packing list]
+  LX --> VN[Kho VN: đếm tổng\nlệch → chạm từng kiện]
+  VN --> GH[Phiếu giao nhiều đợt\nkhông vượt số đã về]
+  HV[HĐ đầu vào theo Mã HH] --> HB[HĐ bán L1/L2\nkhông vượt HĐ vào, chờ hợp quy]
+  HB --> MISA[File import MISA]
+  KN[Khiếu nại] --> CN[Credit note\nngười khác duyệt, trên ngưỡng cần Admin]
+  CN --> CNO[Giảm công nợ đơn]
+```
+
+| Màn hình | Ai dùng | Quy tắc cứng trong DB |
 | --- | --- | --- |
-| 3 | Kho QC/Bằng Tường, kiện & cân đo (D×R×C/6000), dòng khai báo, thư viện HS, list bốc, list xe, snapshot, xuất file khai báo APT | `packages`, `order_items`, `customs_catalog`, `picking_lists`, `trips`, `declaration_snapshots` |
-| 4 | Kho VN kiểm đếm 2 tầng, phiếu nhập/xuất, giao nhiều đợt | `vn_receipts`, `goods_issues` |
-| 5 | HĐ đầu vào theo Mã HH, HĐ bán L1/L2, tồn HĐ, file MISA, khiếu nại, credit note, xử lý chênh | `purchase_invoices`, `sales_invoices`, `claims`, `credit_notes`, `write_offs` |
+| Đơn hàng → Kiện hàng | Kho TQ | Cân tính phí = MAX(kg, D×R×C/hệ số ghim lúc tạo kiện); tự cộng lên đơn |
+| Đơn hàng → Dòng khai báo, Bàn khai báo | CSKH lập, XNK xác nhận | Xác nhận cần HS 8 số; sửa dòng đã xác nhận tự về nháp |
+| List bốc / List xe | CSKH, XNK | `tg_picking_item_guard`, `tg_picking_package_guard`, `lock_trip` |
+| Kho VN – nhận xe | Kho VN | `receive_trip` (tầng nhanh), `finish_trip_receipt` (có lệch, bắt buộc ghi chú) |
+| Giao hàng | Kho VN | `tg_goods_issue_line_guard`: giao ≤ đã về VN |
+| Hóa đơn | Kế toán | `tg_sales_line_guard`: HĐ bán ≤ HĐ vào, chỉ dòng hồ sơ Đạt/Không cần; phát hành phải có số + ngày |
+| Khiếu nại | Khách, CSKH | Khách không sửa khiếu nại, chỉ nhắn; tin nội bộ ẩn với khách; credit note duyệt qua `approve_credit_note` |
+
+## 7. Việc tiếp theo
+
+- Upload ảnh kiện/chứng từ lên Google Drive (bảng `attachments` đã có).
+- Mẫu file chứng từ theo đúng form Nam Trung/APT khi có bộ mẫu.
+- Telegram thông báo, dashboard theo vai trò.

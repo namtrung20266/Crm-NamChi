@@ -8,7 +8,9 @@ Tài liệu thiết kế gốc: "NAMCHI ERP – Bộ tài liệu thiết kế" (
 | --- | --- | --- |
 | 1 | Tài khoản, khách hàng, công ty con, phân quyền, cài đặt, nhật ký | Đang chạy |
 | 2 | Đơn hàng, biểu phí, phiếu tính tiền 3 bản, tiền vào, phân bổ L1/L2, thanh toán NCC, công nợ, lợi nhuận | Đang chạy |
-| 3–5 | Kho, khai báo, list bốc/xe, chứng từ, hóa đơn, khiếu nại | Kế hoạch (docs/FLOWS.md mục 6) |
+| 3 | Kiện & cân đo, dòng khai báo, thư viện HS, list bốc, list xe, chốt + xuất file khai báo/invoice/packing | Xong |
+| 4 | Kho VN kiểm đếm 2 tầng, phiếu giao nhiều đợt | Xong |
+| 5 | HĐ đầu vào theo Mã HH, HĐ bán L1/L2, tồn HĐ, file MISA, khiếu nại, credit note | Xong |
 
 Trang web: https://namtrung20266.github.io/Crm-NamChi/ (GitHub Pages, tự build từ thư mục `web/`).
 Bản đồ quy trình: `docs/FLOWS.md`. Bản đồ code: `docs/graph/graph.html`.
