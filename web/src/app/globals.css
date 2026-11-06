@@ -1,0 +1,37 @@
+@import "tailwindcss";
+
+/* Màu thương hiệu đổi theo khu vực: nội bộ Nam Trung = cam, cổng khách = đỏ */
+:root,
+[data-theme="staff"] {
+  --brand: #e8590c;
+  --brand-strong: #c2410c;
+  --brand-soft: #fff4ec;
+}
+[data-theme="customer"] {
+  --brand: #c81e1e;
+  --brand-strong: #9b1c1c;
+  --brand-soft: #fdf1f1;
+}
+
+@theme inline {
+  --color-brand: var(--brand);
+  --color-brand-strong: var(--brand-strong);
+  --color-brand-soft: var(--brand-soft);
+  --color-ink: #1c1917;
+  --color-muted: #78716c;
+  --color-line: #e7e5e4;
+  --color-surface: #fafaf9;
+  --color-danger: #dc2626;
+  --color-ok: #15803d;
+  --font-sans: "Be Vietnam Pro", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+body {
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}

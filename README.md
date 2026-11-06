@@ -8,7 +8,7 @@ Tài liệu thiết kế gốc: "NAMCHI ERP – Bộ tài liệu thiết kế" (
 | --- | --- | --- |
 | 1 | Repo, CI test database, quét lộ khóa, backup hằng ngày | Xong |
 | 2 | Migration 14 bảng + RLS 3 mức phạm vi + 45 test bảo mật | Xong, 45/45 đạt |
-| 3 | Khung giao diện Next.js + đăng nhập | Chưa |
+| 3 | Khung giao diện Next.js + đăng nhập (thư mục web/) | Xong, build đạt |
 | 4 | 9 màn hình Giai đoạn 1 | Chưa |
 | 5 | Nghiệm thu với tài khoản Lanchi + 2 công ty con | Chưa |
 
@@ -21,6 +21,7 @@ supabase/migrations/   SQL tạo database, chạy theo thứ tự tên file
   ..0300_audit             nhật ký chỉ ghi thêm
   ..0400_security_rls      hàm phân quyền, RLS, RPC set_setting/get_setting/my_permissions/set_user_active
   ..0500_seed_reference    vai trò, quyền, ma trận quyền, cài đặt ban đầu, đơn vị nhập khẩu
+web/                   ứng dụng Next.js (đăng nhập, khung giao diện, menu theo quyền)
 supabase/tests/        test pgTAP (đóng vai từng tài khoản)
 scripts/local/         chạy test trên Postgres thường, không cần Supabase
 .github/workflows/     db-tests (mỗi PR), db-backup (01:00 hằng ngày)
@@ -52,3 +53,14 @@ KHÔNG chạy `scripts/local/supabase_stub.sql` trên Supabase thật.
 - Backup: workflow `db-backup` chạy hằng ngày, mã hóa, đẩy lên Google Drive, giữ 30 ngày. Thử khôi phục mỗi tháng.
 - File (ảnh, Excel, PDF) lưu Google Drive của tài khoản hệ thống, không lưu Supabase Storage.
 - Theo dõi dung lượng database; khi gần giới hạn gói Free hoặc khi bắt đầu ghi nhận tiền thật thì cân nhắc lên gói Pro.
+
+## Chạy ứng dụng web
+
+```bash
+cd web
+npm ci
+# tạo web/.env.local với NEXT_PUBLIC_SUPABASE_URL và NEXT_PUBLIC_SUPABASE_ANON_KEY (khóa publishable)
+npm run dev
+```
+
+Triển khai thử: Vercel → Import repo → Root Directory = `web` → thêm 2 biến môi trường trên.
