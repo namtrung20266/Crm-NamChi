@@ -13,6 +13,8 @@ jobs:
           sudo apt-get update -q
           sudo apt-get install -y -q postgresql-16 postgresql-16-pgtap
           sudo service postgresql start
+      - name: Bỏ migration trùng tên cũ nếu còn sót
+        run: rm -f supabase/migrations/20261106100000_provisioning.sql
       - name: Chạy migration + test bảo mật
         run: sudo bash scripts/local/run_tests.sh | tee test.log && ! grep -q '^not ok' test.log
   secrets-scan:
