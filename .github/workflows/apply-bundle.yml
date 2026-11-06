@@ -1,0 +1,37 @@
+# Áp gói cập nhật: đẩy file bundle/*.zip lên main → workflow giải nén vào repo, xóa file cũ theo bundle-delete.txt,
+# commit, rồi chạy lại deploy-pages. Dùng khi cập nhật code qua giao diện web GitHub.
+name: apply-bundle
+on:
+  push:
+    branches: [main]
+    paths: ['bundle/*.zip']
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: write
+concurrency: { group: apply-bundle, cancel-in-progress: false }
+jobs:
+  apply:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Giải nén gói và commit
+        run: |
+          set -e
+          ls bundle/*.zip >/dev/null 2>&1 || { echo "Không có gói"; exit 0; }
+          for z in bundle/*.zip; do unzip -o "$z" -d .; done
+          if [ -f bundle-delete.txt ]; then
+            while IFS= read -r f; do [ -n "$f" ] && git rm -rf --ignore-unmatch -- "$f"; done < bundle-delete.txt
+            rm -f bundle-delete.txt
+          fi
+          git rm -f --quiet bundle/*.zip
+          git config user.name "namchi-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Áp gói cập nhật $(date -u +%Y-%m-%dT%H:%MZ)" || echo "Không có thay đổi"
+          git push
+      - name: Chạy lại deploy GitHub Pages
+        run: gh workflow run pages.yml --ref main
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
