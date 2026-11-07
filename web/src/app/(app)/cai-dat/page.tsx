@@ -8,6 +8,9 @@ import { useStatusDefs, useLookups, SETTING_LABEL, LOOKUP_CATEGORY, PHASES, type
 import { PageHeader, Card, DataList, Badge, Empty, Field, inputCls, Skeleton, btn } from "@/components/ui";
 import { Form, Submit } from "@/components/ui/form";
 import { fmtDate } from "@/lib/format";
+import { useCustomers, useStaff } from "@/lib/data";
+import Link from "next/link";
+import { rpc } from "@/lib/meta";
 import { viError } from "@/lib/errors";
 
 const ROLE = { importer: "Đứng tên nhập khẩu", exporter: "Người xuất khẩu", supplier: "Nhà cung cấp" } as const;
@@ -23,11 +26,11 @@ export default function SettingsPage() {
     <>
       <PageHeader eyebrow="Hệ thống" title="Cấu hình hệ thống" desc="Một nơi cho mọi tham số, danh mục, trạng thái đơn. Mọi thay đổi có lịch sử; tham số tạo bản mới có ngày hiệu lực nên không làm sai giao dịch cũ." />
       <div className="mb-5 flex gap-1 overflow-x-auto rounded-xl bg-white p-1 ring-1 ring-line">
-        {[["tham-so", "Tham số nghiệp vụ"], ["danh-muc", "Danh mục"], ["trang-thai", "Trạng thái đơn"], ["doi-tac", "Đối tác thương mại"]].map(([k, v]) => (
+        {[["tham-so", "Tham số nghiệp vụ"], ["phan-cong", "Phân công CSKH"], ["danh-muc", "Danh mục"], ["trang-thai", "Trạng thái đơn"], ["doi-tac", "Đối tác thương mại"], ["khac", "Biểu phí · quyền · nhân sự"]].map(([k, v]) => (
           <button key={k} onClick={() => setTab(k)} className={`shrink-0 rounded-lg px-3 py-2 text-[14px] font-semibold ${tab === k ? "bg-ink text-white" : "text-muted hover:text-ink"}`}>{v}</button>
         ))}
       </div>
-      {tab === "tham-so" ? <Params /> : tab === "danh-muc" ? <Lookups /> : tab === "trang-thai" ? <Statuses /> : <Partners />}
+      {tab === "tham-so" ? <Params /> : tab === "phan-cong" ? <Assignments /> : tab === "danh-muc" ? <Lookups /> : tab === "trang-thai" ? <Statuses /> : tab === "khac" ? <Hub /> : <Partners />}
     </>
   );
 }
@@ -208,5 +211,76 @@ function Partners() {
         </Form>
       </details>
     </Card>
+  );
+}
+
+type Asg = { id: string; staff_user_id: string; customer_id: string; entity_id: string | null; valid_from: string; valid_to: string | null };
+type Ent = { id: string; customer_id: string; code: string; legal_name: string };
+
+// Phân công: Quản lý CSKH cho khách tổng, CSKH cho từng công ty con. Đổi bất cứ lúc nào, giữ lịch sử.
+function Assignments() {
+  const qc = useQueryClient();
+  const customers = useCustomers();
+  const staff = useStaff();
+  const ents = useQuery({ queryKey: ["all-entities"], queryFn: () => q<Ent[]>(supabase.from("customer_entities").select("id, customer_id, code, legal_name").is("deleted_at", null).order("legal_name")) });
+  const asg = useQuery({ queryKey: ["assignments"], queryFn: () => q<Asg[]>(supabase.from("staff_customer_assignments").select("id, staff_user_id, customer_id, entity_id, valid_from, valid_to").order("valid_from", { ascending: false })) });
+  const [move, setMove] = useState(true);
+  const [busy, setBusy] = useState<string | null>(null);
+  const today = new Date().toISOString().slice(0, 10);
+  const current = (c: string, e: string | null) => (asg.data ?? []).find((a) => a.customer_id === c && a.entity_id === e && a.valid_from <= today && (!a.valid_to || a.valid_to >= today));
+  const history = (c: string, e: string | null) => (asg.data ?? []).filter((a) => a.customer_id === c && a.entity_id === e && a.valid_to && a.valid_to < today).slice(0, 3);
+  const name = (u: string) => staff.data?.find((x) => x.user_id === u)?.full_name ?? "?";
+  const set = async (c: string, e: string | null, u: string) => {
+    setBusy(c + (e ?? ""));
+    try { await rpc("set_cs_assignment", { p_customer_id: c, p_entity_id: e, p_staff_user_id: u || null, p_move_open_orders: move && !!e }); qc.invalidateQueries({ queryKey: ["assignments"] }); qc.invalidateQueries({ queryKey: ["admin-orders"] }); }
+    catch (x) { alert(viError(x)); } finally { setBusy(null); }
+  };
+  const Pick = ({ c, e }: { c: string; e: string | null }) => {
+    const cur = current(c, e);
+    return (
+      <div className="flex items-center gap-2">
+        <select value={cur?.staff_user_id ?? ""} disabled={busy === c + (e ?? "")} onChange={(x) => set(c, e, x.target.value)} className={inputCls + " h-10 w-56"}>
+          <option value="">— Chưa phân công —</option>{(staff.data ?? []).filter((x) => x.is_active).map((x) => <option key={x.user_id} value={x.user_id}>{x.full_name}</option>)}
+        </select>
+        {cur ? <span className="text-[13px] text-muted">từ {fmtDate(cur.valid_from)}</span> : null}
+        {history(c, e).length ? <span className="text-[13px] text-muted">· trước: {history(c, e).map((h) => name(h.staff_user_id)).join(", ")}</span> : null}
+      </div>
+    );
+  };
+  if (customers.isLoading || ents.isLoading) return <Skeleton />;
+  return (
+    <div className="space-y-5">
+      <Card>
+        <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={move} onChange={(e) => setMove(e.target.checked)} className="h-4 w-4" /> Khi đổi CSKH công ty con: chuyển luôn các đơn đang chạy sang người mới</label>
+        <p className="mt-1 text-[13px] text-muted">Quản lý CSKH (khách tổng) nhận thông báo mọi công ty con. CSKH công ty con được tự gán vào đơn mới và nhận thông báo đơn của công ty đó.</p>
+      </Card>
+      {(customers.data ?? []).map((c) => (
+        <Card key={c.id} title={`${c.code} · ${c.name}`}>
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-brand-soft/60 px-4 py-3"><div><div className="font-semibold">Quản lý CSKH (khách tổng)</div><div className="text-[13px] text-muted">Theo dõi tất cả công ty con</div></div><Pick c={c.id} e={null} /></div>
+            {(ents.data ?? []).filter((e) => e.customer_id === c.id).map((e) => (
+              <div key={e.id} className="flex flex-wrap items-center justify-between gap-3 border-t border-line/70 px-4 pt-3"><div><div className="font-medium">{e.legal_name}</div><div className="text-[13px] text-muted">{e.code}</div></div><Pick c={c.id} e={e.id} /></div>
+            ))}
+          </div>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+// Lối tắt tới các mục cấu hình có trang riêng
+function Hub() {
+  const items: [string, string, string][] = [
+    ["/bieu-phi/", "Biểu phí & giá vốn", "Giá bán, giá vốn từng loại phí theo khách tổng/công ty con, loại HĐ, nhóm hàng; có ngày hiệu lực"],
+    ["/phan-quyen/", "Phân quyền", "Vai trò và quyền từng chức năng (nhân viên, khách)"],
+    ["/nhan-vien/", "Nhân viên", "Tài khoản nhân viên, vai trò"],
+    ["/khach-hang/", "Khách hàng & công ty con", "Thông tin pháp lý, tài khoản khách"],
+  ];
+  return (
+    <div className="grid gap-4 md:grid-cols-2">
+      {items.map(([href, t, d]) => (
+        <Link key={href} href={href} className="card block p-5 transition hover:-translate-y-0.5 hover:shadow-md"><div className="text-base font-semibold">{t} →</div><div className="mt-1 text-sm text-muted">{d}</div></Link>
+      ))}
+    </div>
   );
 }

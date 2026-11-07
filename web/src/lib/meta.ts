@@ -58,6 +58,8 @@ export const SETTING_LABEL: Record<string, string> = {
   "wallet.customer_can_pay": "Khách được tự thanh toán từ ví",
   "wallet.min_topup_vnd": "Số tiền nạp ví tối thiểu (đ)",
   "notify.poll_seconds": "Chu kỳ làm mới thông báo (giây)",
+  "order.auto_quote_on_submit": "Tự lập phiếu tạm tính khi đơn được gửi",
+  "order.quote_requires_customer_confirm": "Khách phải bấm xác nhận phiếu tính tiền (tắt = phiếu tự chốt, khách chỉ xem)",
 };
 export const LOOKUP_CATEGORY: Record<string, string> = {
   goods_group: "Nhóm hàng", order_source: "Nguồn đơn", uom: "Đơn vị tính", delay_reason: "Lý do chậm", origin: "Xuất xứ",

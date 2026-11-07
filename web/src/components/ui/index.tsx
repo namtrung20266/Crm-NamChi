@@ -1,3 +1,4 @@
+import * as React from "react";
 import Link from "next/link";
 
 export function PageHeader({ eyebrow, title, desc, actions }: { eyebrow?: string; title: string; desc?: string; actions?: React.ReactNode }) {
@@ -89,6 +90,7 @@ export function DataList<T>({ rows, columns, mobile, empty }: {
   mobile: (r: T) => React.ReactNode;
   empty: React.ReactNode;
 }) {
+  const { view, pager } = usePaged(rows);
   if (rows.length === 0) return <>{empty}</>;
   return (
     <>
@@ -100,7 +102,7 @@ export function DataList<T>({ rows, columns, mobile, empty }: {
             </tr>
           </thead>
           <tbody>
-            {rows.map((r, i) => (
+            {view.map((r, i) => (
               <tr key={i} className="border-b border-line/70 last:border-0 hover:bg-surface/70">
                 {columns.map((c) => <td key={c.head} className={`px-3 py-3 align-middle ${c.className ?? ""}`}>{c.cell(r)}</td>)}
               </tr>
@@ -109,8 +111,39 @@ export function DataList<T>({ rows, columns, mobile, empty }: {
         </table>
       </div>
       <ul className="space-y-2 md:hidden">
-        {rows.map((r, i) => <li key={i} className="rounded-lg border border-line p-3.5">{mobile(r)}</li>)}
+        {view.map((r, i) => <li key={i} className="rounded-lg border border-line p-3.5">{mobile(r)}</li>)}
       </ul>
+      {pager}
     </>
+  );
+}
+
+// Phân trang dùng chung: mặc định 10 dòng, chọn 10/20/50/100, chuyển trang
+export function usePaged<T>(rows: T[], init = 10) {
+  const [size, setSize] = React.useState(init);
+  const [page, setPage] = React.useState(1);
+  const pages = Math.max(1, Math.ceil(rows.length / size));
+  const cur = Math.min(page, pages);
+  const view = rows.slice((cur - 1) * size, cur * size);
+  const pager = rows.length > 10 ? <Pager page={cur} pages={pages} size={size} total={rows.length} onPage={setPage} onSize={(n) => { setSize(n); setPage(1); }} /> : null;
+  return { view, pager, page: cur, size };
+}
+
+export function Pager({ page, pages, size, total, onPage, onSize }: { page: number; pages: number; size: number; total: number; onPage: (p: number) => void; onSize: (n: number) => void }) {
+  const nums: (number | "…")[] = [];
+  for (let i = 1; i <= pages; i++) if (i === 1 || i === pages || Math.abs(i - page) <= 1) nums.push(i); else if (nums[nums.length - 1] !== "…") nums.push("…");
+  const b = "h-9 min-w-9 rounded-lg px-2.5 text-sm font-semibold transition";
+  return (
+    <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-sm text-muted">
+      <span>{(page - 1) * size + 1}–{Math.min(page * size, total)} / {total} dòng ·{" "}
+        <select value={size} onChange={(e) => onSize(Number(e.target.value))} className="h-8 rounded-md border border-line bg-white px-1.5 text-sm text-ink">
+          {[10, 20, 50, 100].map((n) => <option key={n} value={n}>{n} dòng/trang</option>)}</select></span>
+      <div className="flex items-center gap-1">
+        <button disabled={page <= 1} onClick={() => onPage(page - 1)} className={`${b} border border-line bg-white disabled:opacity-40`}>‹</button>
+        {nums.map((n, i) => n === "…" ? <span key={"e" + i} className="px-1">…</span> : (
+          <button key={n} onClick={() => onPage(n)} className={`${b} ${n === page ? "bg-ink text-white" : "border border-line bg-white text-ink hover:border-brand"}`}>{n}</button>))}
+        <button disabled={page >= pages} onClick={() => onPage(page + 1)} className={`${b} border border-line bg-white disabled:opacity-40`}>›</button>
+      </div>
+    </div>
   );
 }

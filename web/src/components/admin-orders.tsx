@@ -7,7 +7,7 @@ import { useSession } from "@/lib/session";
 import { useCustomers, useEntities, useStaff } from "@/lib/data";
 import { useStatusDefs, statusOf, PHASES, PAYMENT_STATE, DELIVERY_STATE, INVOICE_STATE, rpc, type Tone } from "@/lib/meta";
 import { INVOICE_TYPE } from "@/lib/status";
-import { Badge, inputCls, Skeleton, Empty, btn } from "./ui";
+import { Badge, inputCls, Skeleton, Empty, btn, usePaged } from "./ui";
 import { InlineNote } from "./order-note";
 import { useFileUrl, fileBlobUrl } from "@/lib/files";
 import { vnd, fmtNumber, fmtDate } from "@/lib/format";
@@ -73,6 +73,7 @@ export function AdminOrderTable({ initial = {}, compactTitle }: { initial?: { st
     });
   }, [data.data, defs.data, phase, status, text, flag, sort]);
 
+  const { view: pageRows, pager } = usePaged(rows);
   const tot = rows.reduce((a, o) => ({ cny: a.cny + Number(o.goods_cny), total: a.total + Number(o.total_vnd), remain: a.remain + Math.max(0, Number(o.remaining_vnd)), profit: a.profit + Number(o.profit_vnd ?? 0) }), { cny: 0, total: 0, remain: 0, profit: 0 });
   const H = ({ k, children, right }: { k: SortKey; children: React.ReactNode; right?: boolean }) => (
     <th className={`cursor-pointer select-none px-2.5 py-2 font-medium hover:text-ink ${right ? "text-right" : ""}`} onClick={() => setSort((p) => ({ k, asc: p.k === k ? !p.asc : false }))}>
@@ -146,7 +147,7 @@ export function AdminOrderTable({ initial = {}, compactTitle }: { initial?: { st
               </tr>
             </thead>
             <tbody>
-              {rows.map((o) => {
+              {pageRows.map((o) => {
                 const st = statusOf(defs.data, o.status);
                 return (
                   <tr key={o.id} className={`border-t border-line/70 align-top hover:bg-brand-soft/30 ${o.sla_overdue ? "bg-danger/[.03]" : ""} ${sel.has(o.id) ? "bg-brand-soft/40" : ""}`}>
@@ -184,6 +185,7 @@ export function AdminOrderTable({ initial = {}, compactTitle }: { initial?: { st
               })}
             </tbody>
           </table>
+          <div className="px-3 pb-3">{pager}</div>
         </div>
       )}
     </div>

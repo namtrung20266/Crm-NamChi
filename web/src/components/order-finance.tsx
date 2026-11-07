@@ -52,7 +52,7 @@ export function OrderFinance({ order, progress, onChanged }: { order: { id: stri
   return (
     <div className="space-y-5">
       <Card title={st ? `Phiếu tính tiền · ${STATEMENT_KIND[st.kind]} (bản ${st.version})` : "Phiếu tính tiền"}
-        actions={st ? <Badge tone={st.status === "confirmed" ? "ok" : "warn"}>{st.status === "confirmed" ? `Khách đã xác nhận ${fmtDate(st.confirmed_at)}` : "Chờ khách xác nhận"}</Badge> : null}>
+        actions={st ? <Badge tone={st.status === "confirmed" ? "ok" : "warn"}>{st.status === "confirmed" ? `Đã chốt ${fmtDate(st.confirmed_at)}` : "Chưa chốt"}</Badge> : null}>
         {!st ? <Empty title="Chưa lập phiếu tính tiền" desc={s.can("finance.statement.write") ? "Bấm “Lập phiếu dự tính” để tính theo biểu phí." : "Nam Trung sẽ gửi phiếu sau khi chốt đơn."} /> : (
           <>
             <table className="w-full text-sm"><tbody>
@@ -112,7 +112,7 @@ export function OrderFinance({ order, progress, onChanged }: { order: { id: stri
           <div className="mb-4 flex flex-wrap gap-2">
             {depositDue > 0 ? <button onClick={() => { setPay("coc"); setAmount(String(depositDue)); setErr(null); }} className={btn.primary}>Đặt cọc {vnd(depositDue)}</button> : null}
             <button onClick={() => { setPay("thanh_toan"); setAmount(String(p.remaining_vnd)); setErr(null); }} className={depositDue > 0 ? btn.secondary : btn.primary}>Thanh toán {vnd(p.remaining_vnd)}</button>
-            {st?.status !== "confirmed" ? <span className="self-center text-xs text-amber-700">Cần xác nhận phiếu tính tiền trước khi thanh toán.</span> : null}
+            
           </div>
         ) : null}
         {(ledger.data ?? []).length === 0 ? <p className="text-sm text-muted">Chưa có thanh toán.</p> : (
@@ -199,7 +199,7 @@ export function StatementSummary({ orderId, onOpen }: { orderId: string; onOpen?
   const st = stmt.data;
   return (
     <Card title={st ? `Phiếu tính tiền · ${STATEMENT_KIND[st.kind]} (bản ${st.version})` : "Phiếu tính tiền"}
-      actions={<div className="flex items-center gap-2">{st ? <Badge tone={st.status === "confirmed" ? "ok" : "warn"}>{st.status === "confirmed" ? "Khách đã xác nhận" : "Chờ khách xác nhận"}</Badge> : null}
+      actions={<div className="flex items-center gap-2">{st ? <Badge tone={st.status === "confirmed" ? "ok" : "warn"}>{st.status === "confirmed" ? "Đã chốt" : "Chưa chốt"}</Badge> : null}
         {onOpen ? <button onClick={onOpen} className="text-sm font-semibold text-brand-strong">Chi tiết →</button> : null}</div>}>
       {!st ? <p className="text-sm text-muted">Chưa lập phiếu tính tiền.</p> : (
         <table className="w-full text-[14px]"><tbody>

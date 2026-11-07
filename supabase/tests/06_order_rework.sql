@@ -2,6 +2,10 @@
 -- ví (nạp, duyệt, cọc, đảo), trao đổi + thông báo, quyền gắn file, tiến độ đơn, dòng khai báo của khách
 begin;
 create extension if not exists pgtap;
+-- Giữ luồng cũ (khách xác nhận phiếu, không tự lập phiếu) để kiểm thử các bước thủ công
+update public.app_settings set valid_to = now() where key in ('order.auto_quote_on_submit','order.quote_requires_customer_confirm','order.payment_requires_confirmed_quote') and valid_to is null;
+insert into public.app_settings (key, value_json, note, valid_from) values
+ ('order.auto_quote_on_submit','false','test',now()), ('order.quote_requires_customer_confirm','true','test',now()), ('order.payment_requires_confirmed_quote','true','test',now());
 select plan(48);
 create schema t;
 create function t.login(p uuid) returns void language plpgsql as $$
