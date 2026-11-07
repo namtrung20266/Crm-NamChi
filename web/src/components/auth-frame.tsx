@@ -17,13 +17,13 @@ export function AuthFrame({ title, subtitle, children }: { title: string; subtit
         <header className="relative z-10 flex items-center gap-3">
           <Mark />
           <div>
-            <div className="text-[11px] font-semibold tracking-[0.32em] text-white/50">NAM TRUNG GROUP</div>
+            <div className="text-[12.5px] font-semibold tracking-[0.32em] text-white/50">NAM TRUNG GROUP</div>
             <div className="text-sm font-semibold tracking-wide text-white">NAMCHI</div>
           </div>
         </header>
 
         <div className="relative z-10 mt-auto max-w-[560px]">
-          <p className="font-mono text-[11px] uppercase tracking-[0.3em] text-[var(--brand)]">Tuyến chính ngạch · đường bộ</p>
+          <p className="font-mono text-[12.5px] uppercase tracking-[0.3em] text-[var(--brand)]">Tuyến chính ngạch · đường bộ</p>
           <h1 className="auth-headline">
             Mỗi kiện hàng,<br />một <em>dòng dữ liệu</em><br />xuyên suốt.
           </h1>
@@ -64,7 +64,7 @@ export function AuthFrame({ title, subtitle, children }: { title: string; subtit
           </g>
         </svg>
 
-        <footer className="relative z-10 mt-8 flex items-center justify-between text-[11px] text-white/35">
+        <footer className="relative z-10 mt-8 flex items-center justify-between text-[12.5px] text-white/35">
           <span>CRM &amp; Import Management</span>
           <span className="font-mono">GZ → PX → HN</span>
         </footer>
@@ -77,7 +77,7 @@ export function AuthFrame({ title, subtitle, children }: { title: string; subtit
           <p className="mt-1.5 text-sm leading-relaxed text-muted">{subtitle}</p>
           <div className="mt-7">{children}</div>
         </div>
-        <p className="mt-6 text-center text-[11px] text-muted">© Nam Trung Group · Dữ liệu được mã hóa và phân quyền theo từng khách hàng</p>
+        <p className="mt-6 text-center text-[12.5px] text-muted">© Nam Trung Group · Dữ liệu được mã hóa và phân quyền theo từng khách hàng</p>
       </section>
     </main>
   );

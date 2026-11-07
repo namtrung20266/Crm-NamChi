@@ -68,7 +68,7 @@ export default function DebtPage() {
               <tbody>
                 {R.map((r) => (
                   <tr key={r.order_id} className="border-b border-line/70 hover:bg-surface/70">
-                    <td className="px-2 py-2.5"><Link href={`/don-hang/chi-tiet/?id=${r.order_id}`} className="font-mono font-semibold text-brand-strong">{r.code}</Link><div className="text-[11px] text-muted">{fmtDate(r.created_at)}</div></td>
+                    <td className="px-2 py-2.5"><Link href={`/don-hang/chi-tiet/?id=${r.order_id}`} className="font-mono font-semibold text-brand-strong">{r.code}</Link><div className="text-[12.5px] text-muted">{fmtDate(r.created_at)}</div></td>
                     <td className="px-2 py-2.5">{entName(r.entity_id) || "—"}</td>
                     <td className="px-2 py-2.5"><Badge tone={ORDER_STATUS[r.status]?.tone}>{ORDER_STATUS[r.status]?.label}</Badge></td>
                     <td className="px-2 py-2.5 text-xs">{r.statement_kind ? `${STATEMENT_KIND[r.statement_kind]}${r.statement_status === "confirmed" ? " ✓" : ""}` : <span className="text-muted">Chưa lập</span>}</td>

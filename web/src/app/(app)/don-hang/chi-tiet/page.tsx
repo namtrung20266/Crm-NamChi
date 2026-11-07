@@ -11,7 +11,8 @@ import { INVOICE_TYPE } from "@/lib/status";
 import { PageHeader, Card, Badge, Empty, Field, inputCls, LinkButton, Skeleton, btn } from "@/components/ui";
 import { Form, Submit, ActionButton } from "@/components/ui/form";
 import { OrderStatusBar } from "@/components/order-status";
-import { OrderFinance } from "@/components/order-finance";
+import { OrderFinance, StatementSummary } from "@/components/order-finance";
+import { InlineNote } from "@/components/order-note";
 import { OrderProfit } from "@/components/order-profit";
 import { OrderInvoices } from "@/components/order-invoices";
 import { OrderItems } from "@/components/order-items";
@@ -144,7 +145,7 @@ function Detail() {
       {p ? <div className="mb-5 grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5">
         {chips.map(([l, c, sub, t]) => (
           <button key={l} onClick={() => setTab(t)} className="card px-3 py-2.5 text-left transition hover:-translate-y-0.5">
-            <div className="text-[11px] text-muted">{l}</div><div className="mt-0.5">{c ? <Badge tone={c.tone}>{c.label}</Badge> : null}</div><div className="mt-0.5 font-mono text-[11px] text-muted">{sub}</div>
+            <div className="text-[12.5px] text-muted">{l}</div><div className="mt-0.5">{c ? <Badge tone={c.tone}>{c.label}</Badge> : null}</div><div className="mt-0.5 font-mono text-[12.5px] text-muted">{sub}</div>
           </button>
         ))}
       </div> : null}
@@ -153,12 +154,17 @@ function Detail() {
         <div className="min-w-0 space-y-5">
           <div className="flex gap-1 overflow-x-auto rounded-xl bg-white p-1 ring-1 ring-line">
             {TABS.map(([k, v]) => (
-              <button key={k} onClick={() => setTab(k)} className={`relative shrink-0 rounded-lg px-3 py-2 text-[13px] font-semibold transition ${tab === k ? "bg-ink text-white" : "text-muted hover:text-ink"} ${k === "trao-doi" ? "xl:hidden" : ""}`}>
-                {v}{k === "trao-doi" && unreadMsg ? <span className="ml-1 rounded-full bg-brand px-1.5 text-[10px] text-white">{unreadMsg}</span> : null}
+              <button key={k} onClick={() => setTab(k)} className={`relative shrink-0 rounded-lg px-3 py-2 text-[14px] font-semibold transition ${tab === k ? "bg-ink text-white" : "text-muted hover:text-ink"} ${k === "trao-doi" ? "xl:hidden" : ""}`}>
+                {v}{k === "trao-doi" && unreadMsg ? <span className="ml-1 rounded-full bg-brand px-1.5 text-[12px] text-white">{unreadMsg}</span> : null}
               </button>
             ))}
           </div>
           {tab === "tong-quan" ? <>
+            <div className="grid gap-4 md:grid-cols-2">
+              {s.isStaff ? <Card title="Ghi chú nội bộ (NV)"><InlineNote orderId={o.id} kind="internal" value={o.internal_note} canEdit={s.can("order.write")} placeholder="+ Thêm ghi chú cho nhân viên" /></Card> : null}
+              <Card title={s.isStaff ? "Ghi chú của khách" : "Ghi chú của bạn"}><InlineNote orderId={o.id} kind="customer" value={o.note} canEdit placeholder="+ Thêm ghi chú cho đơn" /></Card>
+            </div>
+            <StatementSummary orderId={o.id} onOpen={() => setTab("tai-chinh")} />
             {info}
             <Card title="Ảnh & file của đơn"><div className="space-y-4"><FileDrop entityType="order" refId={o.id} /><AttachmentGallery entityType="order" refId={o.id} /></div></Card>
           </> : null}
@@ -168,7 +174,7 @@ function Detail() {
             <OrderProfit orderId={o.id} />
           </> : null}
           {tab === "hoa-don" ? <OrderInvoices orderId={o.id} /> : null}
-          {tab === "kien" ? <OrderPackages orderId={o.id} /> : null}
+          {tab === "kien" ? <OrderPackages orderId={o.id} orderCode={o.code} /> : null}
           {tab === "trao-doi" ? <Card title="Trao đổi trên đơn" className="xl:hidden"><OrderChat orderId={o.id} /></Card> : null}
           {tab === "lich-su" ? (
             <Card title="Lịch sử trạng thái">
@@ -182,7 +188,7 @@ function Detail() {
           ) : null}
         </div>
         <div className="hidden xl:block">
-          <div className="sticky top-6"><Card title="Trao đổi trên đơn"><OrderChat orderId={o.id} height="calc(100dvh - 190px)" /></Card></div>
+          <div className="sticky top-6"><Card title="Trao đổi trên đơn"><OrderChat orderId={o.id} height="min(620px, calc(100dvh - 170px))" /></Card></div>
         </div>
       </div>
     </>

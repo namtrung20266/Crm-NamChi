@@ -59,8 +59,8 @@ export function OrderChat({ orderId, height = "60vh" }: { orderId: string; heigh
           const mine = m.created_by === s.user_id;
           return (
             <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
-              <div className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-[13px] ${m.internal ? "border border-dashed border-amber-300 bg-amber-50" : mine ? "bg-brand text-white" : m.author_side === "customer" ? "bg-blue-50" : "bg-surface"}`}>
-                <div className={`mb-0.5 text-[10.5px] font-semibold ${mine && !m.internal ? "text-white/80" : "text-muted"}`}>
+              <div className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-[14px] ${m.internal ? "border border-dashed border-amber-300 bg-amber-50" : mine ? "bg-brand text-white" : m.author_side === "customer" ? "bg-blue-50" : "bg-surface"}`}>
+                <div className={`mb-0.5 text-[12px] font-semibold ${mine && !m.internal ? "text-white/80" : "text-muted"}`}>
                   {m.author_name ?? "?"}{m.author_side === "customer" ? " · khách" : ""}{m.internal ? " · nội bộ 🔒" : ""} · {fmtDateTime(m.created_at)}
                 </div>
                 <div className="whitespace-pre-wrap break-words">{m.body}</div>
@@ -75,11 +75,12 @@ export function OrderChat({ orderId, height = "60vh" }: { orderId: string; heigh
         onPaste={(e) => { const f = Array.from(e.clipboardData.files); if (f.length) { e.preventDefault(); setPending((p) => [...p, ...f]); } }}
         onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); setPending((p) => [...p, ...Array.from(e.dataTransfer.files)]); }}>
         {s.isStaff && (replies.data ?? []).length ? (
-          <div className="mb-2 flex gap-1.5 overflow-x-auto pb-1">{(replies.data ?? []).filter((r) => r.is_active).map((r) => (
-            <button key={r.code} type="button" onClick={() => setBody(r.label)} className="shrink-0 rounded-full border border-line bg-white px-2.5 py-1 text-[11px] text-muted hover:border-brand hover:text-brand-strong">{r.label.slice(0, 34)}…</button>
-          ))}</div>
+          <select value="" onChange={(e) => { if (e.target.value) setBody(e.target.value); }} className="mb-2 h-9 w-full rounded-lg border border-line bg-white px-2 text-[13.5px] text-muted">
+            <option value="">⚡ Câu trả lời nhanh…</option>
+            {(replies.data ?? []).filter((r) => r.is_active).map((r) => <option key={r.code} value={r.label}>{r.label}</option>)}
+          </select>
         ) : null}
-        {pending.length ? <div className="mb-2 flex flex-wrap gap-1.5">{pending.map((f, i) => <span key={i} className="rounded bg-surface px-2 py-0.5 text-[11px]">📎 {f.name} <button onClick={() => setPending(pending.filter((_, j) => j !== i))} className="text-danger">✕</button></span>)}</div> : null}
+        {pending.length ? <div className="mb-2 flex flex-wrap gap-1.5">{pending.map((f, i) => <span key={i} className="rounded bg-surface px-2 py-0.5 text-[12.5px]">📎 {f.name} <button onClick={() => setPending(pending.filter((_, j) => j !== i))} className="text-danger">✕</button></span>)}</div> : null}
         <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={2} placeholder={internal ? "Ghi chú nội bộ (khách không thấy)…" : "Nhắn trên đơn… (Ctrl+Enter để gửi, dán ảnh trực tiếp)"}
           onKeyDown={(e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) send(); }}
           className={`w-full resize-none rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 ${internal ? "border-amber-300 bg-amber-50 focus:ring-amber-200" : "border-line focus:border-brand focus:ring-brand/15"}`} />

@@ -22,16 +22,16 @@ export function OrderInvoices({ orderId }: { orderId: string }) {
       <Card title="Xuất hóa đơn theo dòng hàng" actions={x?.lines.length ? <Badge tone={tq.m === 0 ? "ok" : tq.i > 0 ? "warn" : "neutral"}>{tq.m === 0 ? "Đã xuất đủ" : `Còn thiếu ${fmtNumber(tq.m)} / ${fmtNumber(tq.q)}`}</Badge> : null}>
         {!x ? <div className="skeleton h-24" /> : x.lines.length === 0 ? <Empty title="Chưa có dòng khai báo" desc="Hóa đơn bán xuất theo dòng hàng đã khai báo." /> : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] text-[13px]">
-              <thead><tr className="text-left text-[11px] uppercase text-muted"><th className="pb-2">#</th><th className="pb-2">Hàng</th><th className="pb-2 text-right">SL hàng</th><th className="pb-2 text-right">Đã giao</th>
+            <table className="w-full min-w-[720px] text-[14px]">
+              <thead><tr className="text-left text-[12.5px] uppercase text-muted"><th className="pb-2">#</th><th className="pb-2">Hàng</th><th className="pb-2 text-right">SL hàng</th><th className="pb-2 text-right">Đã giao</th>
                 {staff ? <th className="pb-2 text-right">HĐ đầu vào</th> : null}<th className="pb-2 text-right">Đã phát hành</th><th className="pb-2 text-right">Đang lập</th><th className="pb-2 text-right">Còn thiếu</th><th className="pb-2">Tiến độ</th></tr></thead>
               <tbody>{x.lines.map((l) => {
                 const pct = l.qty ? Math.min(100, (l.issued_qty / l.qty) * 100) : 0;
                 return (
                   <tr key={l.item_id} className="border-t border-line/70">
                     <td className="py-2 font-mono text-xs">{l.line_no}</td>
-                    <td className="py-2"><div className="font-medium">{l.name}</div><div className="text-[11px] text-muted">{[l.model, staff && l.hh_code ? `Mã HH ${l.hh_code}` : null].filter(Boolean).join(" · ")}{!l.compliance_ok ? <span className="text-danger"> · chưa xong hồ sơ chuyên ngành</span> : null}</div></td>
-                    <td className="py-2 text-right font-mono">{fmtNumber(l.qty)} <span className="text-[10px] text-muted">{l.uom}</span></td>
+                    <td className="py-2"><div className="font-medium">{l.name}</div><div className="text-[12.5px] text-muted">{[l.model, staff && l.hh_code ? `Mã HH ${l.hh_code}` : null].filter(Boolean).join(" · ")}{!l.compliance_ok ? <span className="text-danger"> · chưa xong hồ sơ chuyên ngành</span> : null}</div></td>
+                    <td className="py-2 text-right font-mono">{fmtNumber(l.qty)} <span className="text-[12px] text-muted">{l.uom}</span></td>
                     <td className="py-2 text-right font-mono">{fmtNumber(l.delivered_qty)}</td>
                     {staff ? <td className={`py-2 text-right font-mono ${Number(l.purchased_qty) < Number(l.qty) ? "text-amber-700" : ""}`}>{fmtNumber(l.purchased_qty)}</td> : null}
                     <td className="py-2 text-right font-mono text-ok">{fmtNumber(l.issued_qty)}</td>

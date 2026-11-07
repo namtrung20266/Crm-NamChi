@@ -47,7 +47,7 @@ export default function AuditPage() {
                   <div className="flex flex-wrap items-center gap-2 text-sm"><Badge tone={tone}>{label}</Badge><span className="font-medium">{TABLE[l.table_name] ?? l.table_name}</span>
                     <span className="text-muted">bởi</span><span className="font-medium">{who(l.actor_id)}</span><span className="ml-auto font-mono text-xs text-muted">{fmtDateTime(l.at)}</span></div>
                   {l.reason ? <p className="mt-1 text-xs text-muted">Lý do: {l.reason}</p> : null}
-                  {l.changed_fields?.length ? <div className="mt-2 overflow-x-auto rounded-md bg-surface p-2 font-mono text-[11px]">
+                  {l.changed_fields?.length ? <div className="mt-2 overflow-x-auto rounded-md bg-surface p-2 font-mono text-[12.5px]">
                     {l.changed_fields.map((f) => <div key={f}><span className="text-muted">{f}:</span> <span className="text-danger line-through">{JSON.stringify(l.old_data?.[f])}</span> → <span className="text-ok">{JSON.stringify(l.new_data?.[f])}</span></div>)}
                   </div> : null}
                 </li>

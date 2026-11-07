@@ -48,7 +48,7 @@ function Detail() {
         actions={<LinkButton href="/list-boc/" variant="secondary">← List bốc</LinkButton>} />
       <div className="card sticky top-14 z-10 mb-5 grid grid-cols-3 gap-3 p-4 sm:grid-cols-6 lg:top-2">
         {[["Đơn", t.orders], ["Dòng", mine.data?.length ?? 0], ["Kiện", t.packages], ["GW kg", fmtNumber(t.gw_kg)], ["CBM", fmtNumber(t.cbm)], ["Trị giá tệ", fmtNumber(t.value_cny)]].map(([l, v]) => (
-          <div key={l as string}><div className="text-[11px] text-muted">{l}</div><div className="font-mono text-lg font-semibold">{v}</div></div>
+          <div key={l as string}><div className="text-[12.5px] text-muted">{l}</div><div className="font-mono text-lg font-semibold">{v}</div></div>
         ))}
       </div>
       <div className="grid gap-5 xl:grid-cols-2">

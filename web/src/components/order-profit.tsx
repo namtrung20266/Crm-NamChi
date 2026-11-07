@@ -35,17 +35,17 @@ export function OrderProfit({ orderId }: { orderId: string }) {
         <>
           {x.missing ? <p className="mb-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">{x.missing} khoản chưa có giá vốn → lợi nhuận đang bị tính cao hơn thực tế. {write ? "Bấm “Đặt” để nhập." : ""}</p> : null}
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[640px] text-[13px]">
-              <thead><tr className="text-left text-[11px] uppercase text-muted"><th className="pb-2">Khoản</th><th className="pb-2 text-right">Thu khách</th><th className="pb-2 text-right">Giá vốn</th><th className="pb-2">Nguồn giá vốn</th><th className="pb-2 text-right">Lãi</th><th /></tr></thead>
+            <table className="w-full min-w-[640px] text-[14px]">
+              <thead><tr className="text-left text-[12.5px] uppercase text-muted"><th className="pb-2">Khoản</th><th className="pb-2 text-right">Thu khách</th><th className="pb-2 text-right">Giá vốn</th><th className="pb-2">Nguồn giá vốn</th><th className="pb-2 text-right">Lãi</th><th /></tr></thead>
               <tbody>{x.lines.map((l) => (
                 <tr key={l.key} className="border-t border-line/70 align-top">
-                  <td className="py-2">{l.label}{l.override_note ? <div className="text-[11px] text-muted">{l.override_note}</div> : null}</td>
+                  <td className="py-2">{l.label}{l.override_note ? <div className="text-[12.5px] text-muted">{l.override_note}</div> : null}</td>
                   <td className="py-2 text-right font-mono">{fmtNumber(l.revenue_vnd)}</td>
                   <td className="py-2 text-right font-mono">{edit === l.key ? (
                     <div className="flex flex-col items-end gap-1"><input value={val} onChange={(e) => setVal(e.target.value)} autoFocus className={inputCls + " h-8 w-32 text-right font-mono"} />
                       <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Căn cứ (HĐ, chứng từ…)" className={inputCls + " h-8 w-48 text-xs"} /></div>
                   ) : l.cost_vnd == null ? <span className="text-danger">—</span> : fmtNumber(l.cost_vnd)}
-                    {l.cost_override_vnd != null && (l.cost_actual_vnd ?? l.cost_rule_vnd) != null ? <div className="text-[10.5px] text-muted line-through">{fmtNumber(l.cost_actual_vnd ?? l.cost_rule_vnd)}</div> : null}</td>
+                    {l.cost_override_vnd != null && (l.cost_actual_vnd ?? l.cost_rule_vnd) != null ? <div className="text-[12px] text-muted line-through">{fmtNumber(l.cost_actual_vnd ?? l.cost_rule_vnd)}</div> : null}</td>
                   <td className="py-2"><Badge tone={SRC[l.source]?.[1]}>{SRC[l.source]?.[0]}</Badge></td>
                   <td className={`py-2 text-right font-mono ${l.profit_vnd >= 0 ? "text-ok" : "text-danger"}`}>{fmtNumber(l.profit_vnd)}</td>
                   <td className="py-2 pl-2 text-right">{write ? (edit === l.key
@@ -66,7 +66,7 @@ export function OrderProfit({ orderId }: { orderId: string }) {
             </div>
           ) : null}
           {err ? <p className="mt-2 text-xs text-danger">{err}</p> : null}
-          <p className="mt-2 text-[11px] text-muted">Ưu tiên giá vốn: nhập tay → tiền hàng theo tỷ giá trả NCC thực tế (khi đã trả đủ {fmtNumber(x.goods_cny)} tệ, hiện {fmtNumber(x.supplier_paid_cny)}) → mức giá vốn trong Biểu phí. Mọi lần đặt đều lưu lịch sử.</p>
+          <p className="mt-2 text-[12.5px] text-muted">Ưu tiên giá vốn: nhập tay → tiền hàng theo tỷ giá trả NCC thực tế (khi đã trả đủ {fmtNumber(x.goods_cny)} tệ, hiện {fmtNumber(x.supplier_paid_cny)}) → mức giá vốn trong Biểu phí. Mọi lần đặt đều lưu lịch sử.</p>
         </>
       )}
     </Card>

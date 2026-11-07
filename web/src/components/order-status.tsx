@@ -41,10 +41,10 @@ export function OrderStatusBar({ orderId, status, onChanged }: { orderId: string
             const firstOfPhase = i === 0 || flow[i - 1].phase !== d.phase;
             return (
               <div key={d.code} className="flex flex-col">
-                <div className="h-4 pl-1 text-[9.5px] font-semibold uppercase tracking-wider text-muted">{firstOfPhase ? PHASES[d.phase] : ""}</div>
+                <div className="h-4 pl-1 text-[11px] font-semibold uppercase tracking-wider text-muted">{firstOfPhase ? PHASES[d.phase] : ""}</div>
                 <div className="flex items-center">
                   <button disabled={!write || here} onClick={() => { setTarget(d.code); setErr(null); }} title={d.description ?? ""}
-                    className={`whitespace-nowrap rounded-full px-2.5 py-1.5 text-[11.5px] font-semibold transition ${here ? "bg-brand text-white shadow-[0_6px_16px_-8px_var(--brand)]" : done ? "bg-brand-soft text-brand-strong" : "bg-surface text-muted"} ${write && !here ? "hover:ring-2 hover:ring-brand/30" : ""}`}>
+                    className={`whitespace-nowrap rounded-full px-2.5 py-1.5 text-[13px] font-semibold transition ${here ? "bg-brand text-white shadow-[0_6px_16px_-8px_var(--brand)]" : done ? "bg-brand-soft text-brand-strong" : "bg-surface text-muted"} ${write && !here ? "hover:ring-2 hover:ring-brand/30" : ""}`}>
                     {done && !here ? "✓ " : ""}{d.label}
                   </button>
                   {i < flow.length - 1 ? <span className={`h-px w-3 ${done ? "bg-brand/50" : "bg-line"}`} /> : null}

@@ -28,7 +28,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="flex items-center gap-3 px-5 py-5">
           <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-brand font-mono text-xs font-bold text-white shadow-[0_8px_20px_-8px_var(--brand)]">NT</span>
           <div className="min-w-0 flex-1">
-            <div className="text-[11px] font-semibold tracking-[0.24em] text-brand">NAMCHI</div>
+            <div className="text-[12.5px] font-semibold tracking-[0.24em] text-brand">NAMCHI</div>
             <div className="truncate text-xs text-muted" title={scope}>{scope}</div>
           </div>
           <NotificationBell />
@@ -36,10 +36,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <nav className="flex-1 space-y-5 overflow-y-auto px-3 pb-4" aria-label="Điều hướng chính">
           {groups.map((g) => (
             <div key={g}>
-              <div className="px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted/80">{g}</div>
+              <div className="px-3 pb-1.5 text-[12px] font-semibold uppercase tracking-[0.18em] text-muted/80">{g}</div>
               {items.filter((i) => i.group === g).map((i) => (
                 <Link key={i.href} href={i.href} prefetch
-                  className={`flex h-10 items-center gap-3 rounded-lg px-3 text-[13.5px] font-medium transition ${active(i.href) ? "nav-active" : "text-ink/80 hover:bg-white hover:text-ink"}`}>
+                  className={`flex h-10 items-center gap-3 rounded-lg px-3 text-[14.5px] font-medium transition ${active(i.href) ? "nav-active" : "text-ink/80 hover:bg-white hover:text-ink"}`}>
                   <Icon d={i.icon} />{i.label}
                 </Link>
               ))}
@@ -55,10 +55,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <header className="glass sticky top-0 z-20 flex h-14 items-center justify-between border-b border-line/80 px-4 lg:hidden" style={{ paddingTop: "env(safe-area-inset-top)" }}>
         <div className="flex min-w-0 items-center gap-2.5">
-          <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-brand font-mono text-[11px] font-bold text-white">NT</span>
+          <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-brand font-mono text-[12.5px] font-bold text-white">NT</span>
           <div className="min-w-0"><div className="truncate text-sm font-semibold">{scope}</div></div>
         </div>
-        <div className="flex items-center gap-1"><NotificationBell align="right" /><button onClick={logout} className="h-11 px-2 text-sm font-medium text-muted">Thoát</button></div>
+        <div className="flex items-center gap-1"><NotificationBell /><button onClick={logout} className="h-11 px-2 text-sm font-medium text-muted">Thoát</button></div>
       </header>
 
       <main key={path} className="page-enter mx-auto w-full max-w-7xl px-4 pb-28 pt-5 lg:px-8 lg:pb-12 lg:pt-8">{children}</main>
@@ -66,7 +66,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <nav aria-label="Điều hướng nhanh" className="glass fixed inset-x-0 bottom-0 z-20 grid border-t border-line/80 lg:hidden"
         style={{ gridTemplateColumns: `repeat(${mobile.length}, minmax(0,1fr))`, paddingBottom: "env(safe-area-inset-bottom)" }}>
         {mobile.map((i) => (
-          <Link key={i.href} href={i.href} className={`flex h-16 flex-col items-center justify-center gap-1 text-[11px] font-medium ${active(i.href) ? "text-brand-strong" : "text-muted"}`}>
+          <Link key={i.href} href={i.href} className={`flex h-16 flex-col items-center justify-center gap-1 text-[12.5px] font-medium ${active(i.href) ? "text-brand-strong" : "text-muted"}`}>
             <Icon d={i.icon} />{i.short}
           </Link>
         ))}

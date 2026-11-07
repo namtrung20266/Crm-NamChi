@@ -8,12 +8,14 @@ import { useCustomers, useEntities, useStaff } from "@/lib/data";
 import { useStatusDefs, statusOf, PHASES, PAYMENT_STATE, DELIVERY_STATE, INVOICE_STATE, rpc, type Tone } from "@/lib/meta";
 import { INVOICE_TYPE } from "@/lib/status";
 import { Badge, inputCls, Skeleton, Empty, btn } from "./ui";
+import { InlineNote } from "./order-note";
+import { useFileUrl, fileBlobUrl } from "@/lib/files";
 import { vnd, fmtNumber, fmtDate } from "@/lib/format";
 import { downloadCsv } from "@/lib/csv";
 
 export type AdminOrder = {
   id: string; code: string; customer_ref: string | null; customer_code: string; entity_code: string; entity_name: string; entity_id: string; customer_id: string;
-  goods_desc: string | null; goods_group: string | null; supplier_name: string | null; china_invoice_type: string; goods_cny: number; goods_qty: number;
+  goods_desc: string | null; goods_group: string | null; supplier_name: string | null; china_invoice_type: string; goods_cny: number; goods_qty: number; fx_rate: number;
   weight_kg: number; cbm: number; packages: number; order_week: string | null; expected_week: string | null; status: string; status_changed_at: string;
   created_at: string; cs_owner_id: string | null; cs_name: string | null; require_label_check: boolean; require_inspection: boolean;
   days_in_status: number; sla_overdue: boolean; total_vnd: number; deposit_vnd: number; paid_vnd: number; remaining_vnd: number; payment_state: string;
@@ -21,6 +23,7 @@ export type AdminOrder = {
   pkg_total: number; pkg_cn: number; pkg_on_trip: number; pkg_vn: number; pkg_delivered: number; pkg_issue: number;
   qty_total: number; qty_delivered: number; delivery_state: string; qty_invoiced: number; qty_invoice_draft: number; invoice_state: string;
   messages_count: number; last_message_at: string | null; attachments_count: number; unread_count: number; profit_vnd?: number | null; cost_missing?: number;
+  note: string | null; internal_note: string | null; thumb_id: string | null; images_count: number;
 };
 
 const Chip = ({ s }: { s?: { label: string; tone: Tone } }) => (s ? <Badge tone={s.tone}>{s.label}</Badge> : null);
@@ -38,6 +41,7 @@ export function AdminOrderTable({ initial = {}, compactTitle }: { initial?: { st
   const [text, setText] = useState("");
   const [flag, setFlag] = useState("");
   const [sort, setSort] = useState<{ k: SortKey; asc: boolean }>({ k: "created_at", asc: false });
+  const [sel, setSel] = useState<Set<string>>(new Set());
   const ents = useEntities(f.customer_id || null);
   const money = s.can("finance.read"), profit = s.can("finance.profit.read");
   const data = useQuery({ queryKey: ["admin-orders", f], queryFn: () => rpc<AdminOrder[]>("admin_orders", { p_filter: { ...f, limit: 2000 } }) });
@@ -77,11 +81,11 @@ export function AdminOrderTable({ initial = {}, compactTitle }: { initial?: { st
   );
   const exportCsv = () => downloadCsv(`don-hang-${new Date().toISOString().slice(0, 10)}.csv`,
     ["Mã đơn", "Mã PO khách", "Công ty", "Hàng", "Shop", "HĐ TQ", "Tiền hàng (tệ)", "Trạng thái", "Số ngày ở bước", "Quá hạn", "CSKH", "Phải thu", "Đã thu", "Còn lại", "Thanh toán",
-      "Dòng KB", "Đã xác nhận", "Kiện", "Kiện VN", "Giao", "Hóa đơn", "SL HĐ đã xuất", "SL hàng", ...(profit ? ["Lợi nhuận"] : []), "Ngày tạo"],
-    rows.map((o) => [o.code, o.customer_ref, o.entity_name, o.goods_desc, o.supplier_name, o.china_invoice_type, o.goods_cny, statusOf(defs.data, o.status).label, o.days_in_status,
+      "Dòng KB", "Đã xác nhận", "Kiện", "Kiện VN", "Giao", "Hóa đơn", "SL HĐ đã xuất", "SL hàng", ...(profit ? ["Lợi nhuận"] : []), "Ngày tạo", "Ghi chú khách", "Ghi chú nội bộ", "Tuần đặt", "Cân (kg)", "Khối (m3)", "Số kiện", "Số lượng", "Tỷ giá"],
+    (sel.size ? rows.filter((o) => sel.has(o.id)) : rows).map((o) => [o.code, o.customer_ref, o.entity_name, o.goods_desc, o.supplier_name, o.china_invoice_type, o.goods_cny, statusOf(defs.data, o.status).label, o.days_in_status,
       o.sla_overdue ? "Có" : "", o.cs_name, money ? o.total_vnd : "", money ? o.paid_vnd : "", money ? o.remaining_vnd : "", PAYMENT_STATE[o.payment_state]?.label,
       o.items_total, o.items_confirmed, o.pkg_total, o.pkg_vn, DELIVERY_STATE[o.delivery_state]?.label, INVOICE_STATE[o.invoice_state]?.label, o.qty_invoiced, o.qty_total,
-      ...(profit ? [o.profit_vnd ?? ""] : []), fmtDate(o.created_at)]));
+      ...(profit ? [o.profit_vnd ?? ""] : []), fmtDate(o.created_at), o.note, o.internal_note, o.order_week, o.weight_kg, o.cbm, o.packages, o.goods_qty, o.fx_rate]));
 
   const phaseCount = (p: string) => (data.data ?? []).filter((o) => defs.data?.find((x) => x.code === o.status)?.phase === p).length;
   return (
@@ -115,7 +119,7 @@ export function AdminOrderTable({ initial = {}, compactTitle }: { initial?: { st
         <input type="date" value={f.from} onChange={(e) => setF({ ...f, from: e.target.value })} className={inputCls} title="Tạo từ ngày" />
         <input type="date" value={f.to} onChange={(e) => setF({ ...f, to: e.target.value })} className={inputCls} title="Đến ngày" />
         <div className="flex gap-2 lg:col-span-2">
-          <button onClick={exportCsv} className={btn.secondary + " flex-1"}>Xuất Excel ({rows.length})</button>
+          <button onClick={exportCsv} className={btn.secondary + " flex-1"}>Xuất Excel ({sel.size || rows.length}{sel.size ? " đã chọn" : ""})</button>
           <button onClick={() => { setF({ customer_id: "", entity_id: "", cs_owner_id: "", from: "", to: "" }); setPhase(""); setStatus(""); setFlag(""); setText(""); }} className={btn.ghost}>Xóa lọc</button>
         </div>
       </div>
@@ -126,37 +130,55 @@ export function AdminOrderTable({ initial = {}, compactTitle }: { initial?: { st
         {profit ? <span>Lợi nhuận <b className="font-mono text-ok">{vnd(tot.profit)}</b></span> : null}
       </div>
       {data.isLoading ? <Skeleton rows={8} /> : rows.length === 0 ? <Empty title="Không có đơn phù hợp bộ lọc" /> : (
-        <div className="overflow-x-auto rounded-xl border border-line bg-white">
-          <table className="w-full min-w-[1280px] text-left text-[13px]">
-            <thead className="sticky top-0 bg-surface text-[11px] uppercase tracking-wide text-muted">
+        <div className="rounded-xl border border-line bg-white">
+          <table className="w-full table-fixed text-left text-[14px]">
+            <colgroup><col className="w-9" /><col className="w-[64px]" /><col /><col className="w-[150px]" /><col className="w-[200px]" /><col className="w-[118px]" />
+              <col className="w-[200px]" /><col className="w-[110px]" /></colgroup>
+            <thead className="sticky top-0 z-10 bg-surface text-[12.5px] uppercase tracking-wide text-muted">
               <tr>
-                <H k="code">Đơn</H><th className="px-2.5 py-2 font-medium">Công ty · hàng</th><H k="days_in_status">Trạng thái</H>
-                {money ? <H k="remaining_vnd" right>Thanh toán</H> : null}
-                <th className="px-2.5 py-2 font-medium">Khai báo</th><th className="px-2.5 py-2 font-medium">Kiện</th><th className="px-2.5 py-2 font-medium">Giao · HĐ</th>
-                <H k="goods_cny" right>Tiền hàng</H>{profit ? <H k="profit_vnd" right>Lãi</H> : null}<th className="px-2.5 py-2 font-medium">CSKH</th><H k="created_at">Tạo</H>
+                <th className="px-2 py-2.5"><input type="checkbox" checked={sel.size > 0 && sel.size === rows.length} onChange={(e) => setSel(e.target.checked ? new Set(rows.map((o) => o.id)) : new Set())} /></th>
+                <th className="px-1 py-2.5 font-medium">Ảnh</th>
+                <H k="code">Đơn · công ty · hàng</H><H k="days_in_status">Trạng thái</H>
+                <th className="px-2.5 py-2.5 font-medium">Tiến độ</th>
+                <H k="goods_cny" right>Giá trị</H>
+                <th className="px-2.5 py-2.5 font-medium">Ghi chú NV / khách</th>
+                <H k="created_at">CSKH</H>
               </tr>
             </thead>
             <tbody>
               {rows.map((o) => {
                 const st = statusOf(defs.data, o.status);
                 return (
-                  <tr key={o.id} className={`border-t border-line/70 align-top hover:bg-brand-soft/40 ${o.sla_overdue ? "bg-danger/[.03]" : ""}`}>
-                    <td className="px-2.5 py-2">
-                      <Link href={`/don-hang/chi-tiet/?id=${o.id}`} className="font-mono font-semibold text-brand-strong hover:underline">{o.code}</Link>
-                      {o.unread_count ? <span className="ml-1 rounded-full bg-brand px-1.5 font-mono text-[10px] text-white">{o.unread_count}</span> : null}
-                      <div className="text-[11px] text-muted">{o.customer_ref ? `PO ${o.customer_ref}` : INVOICE_TYPE[o.china_invoice_type]}</div>
+                  <tr key={o.id} className={`border-t border-line/70 align-top hover:bg-brand-soft/30 ${o.sla_overdue ? "bg-danger/[.03]" : ""} ${sel.has(o.id) ? "bg-brand-soft/40" : ""}`}>
+                    <td className="px-2 py-3"><input type="checkbox" checked={sel.has(o.id)} onChange={(e) => { const n = new Set(sel); if (e.target.checked) n.add(o.id); else n.delete(o.id); setSel(n); }} /></td>
+                    <td className="px-1 py-3"><OrderThumb id={o.thumb_id} n={o.images_count} /></td>
+                    <td className="px-2.5 py-3">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <Link href={`/don-hang/chi-tiet/?id=${o.id}`} className="font-semibold text-brand-strong hover:underline">{o.code}</Link>
+                        {o.unread_count ? <span className="rounded-full bg-brand px-1.5 text-[12px] font-semibold text-white">{o.unread_count} mới</span> : null}
+                        {o.customer_ref ? <span className="text-[12.5px] text-muted">PO {o.customer_ref}</span> : null}
+                      </div>
+                      <div className="font-medium">{o.entity_name}</div>
+                      <div className="line-clamp-2 text-[13px] text-muted">{o.goods_desc ?? "—"}{o.supplier_name ? ` · ${o.supplier_name}` : ""} · {INVOICE_TYPE[o.china_invoice_type]}</div>
+                      {o.require_label_check || o.require_inspection ? <div className="mt-1 flex gap-1">{o.require_label_check ? <Badge tone="warn">Check tem</Badge> : null}{o.require_inspection ? <Badge tone="warn">Kiểm định</Badge> : null}</div> : null}
                     </td>
-                    <td className="max-w-[240px] px-2.5 py-2"><div className="truncate font-medium">{o.entity_name}</div><div className="truncate text-[11px] text-muted">{o.goods_desc ?? "—"}{o.supplier_name ? ` · ${o.supplier_name}` : ""}</div>
-                      {o.require_label_check || o.require_inspection ? <div className="mt-0.5 flex gap-1">{o.require_label_check ? <Badge tone="warn">Check tem</Badge> : null}{o.require_inspection ? <Badge tone="warn">Kiểm định</Badge> : null}</div> : null}</td>
-                    <td className="px-2.5 py-2"><Badge tone={st.tone}>{st.label}</Badge><div className={`mt-0.5 text-[11px] ${o.sla_overdue ? "font-semibold text-danger" : "text-muted"}`}>{o.days_in_status} ngày{o.sla_overdue ? " · quá hạn" : ""}</div></td>
-                    {money ? <td className="px-2.5 py-2 text-right"><Chip s={PAYMENT_STATE[o.payment_state]} />{o.total_vnd ? <div className={`mt-0.5 font-mono text-[11px] ${o.remaining_vnd > 0 ? "text-danger" : "text-ok"}`}>còn {fmtNumber(o.remaining_vnd)}</div> : null}</td> : null}
-                    <td className="px-2.5 py-2 text-[12px]">{o.items_total ? <><span className="font-mono">{o.items_confirmed}/{o.items_total}</span> xác nhận<div className="text-[11px] text-muted">📷 {o.items_with_image}/{o.items_total}{o.items_missing_hs ? <span className="text-danger"> · thiếu HS {o.items_missing_hs}</span> : null}</div></> : <span className="text-muted">Chưa có dòng</span>}</td>
-                    <td className="px-2.5 py-2 font-mono text-[12px]">{o.pkg_total ? <>{o.pkg_total}<div className="text-[10.5px] text-muted">TQ {o.pkg_cn} · xe {o.pkg_on_trip} · VN {o.pkg_vn}{o.pkg_issue ? <span className="text-danger"> · lỗi {o.pkg_issue}</span> : null}</div></> : "—"}</td>
-                    <td className="space-y-0.5 px-2.5 py-2"><Chip s={DELIVERY_STATE[o.delivery_state]} /><div><Chip s={INVOICE_STATE[o.invoice_state]} /></div>{o.qty_total ? <div className="font-mono text-[10.5px] text-muted">HĐ {fmtNumber(o.qty_invoiced)}/{fmtNumber(o.qty_total)}</div> : null}</td>
-                    <td className="px-2.5 py-2 text-right font-mono">{fmtNumber(o.goods_cny)}<div className="text-[10.5px] text-muted">{fmtNumber(o.weight_kg)} kg</div></td>
-                    {profit ? <td className="px-2.5 py-2 text-right font-mono">{o.profit_vnd != null ? <span className={o.profit_vnd >= 0 ? "text-ok" : "text-danger"}>{fmtNumber(o.profit_vnd)}</span> : "—"}{o.cost_missing ? <div className="text-[10.5px] text-amber-700">thiếu vốn {o.cost_missing}</div> : null}</td> : null}
-                    <td className="px-2.5 py-2 text-[12px]">{o.cs_name ?? <span className="text-danger">Chưa gán</span>}</td>
-                    <td className="px-2.5 py-2 text-[11px] text-muted">{fmtDate(o.created_at)}{o.messages_count ? <div>💬 {o.messages_count}</div> : null}</td>
+                    <td className="px-2.5 py-3"><Badge tone={st.tone}>{st.label}</Badge>
+                      <div className={`mt-1 text-[12.5px] ${o.sla_overdue ? "font-semibold text-danger" : "text-muted"}`}>{o.days_in_status} ngày ở bước{o.sla_overdue ? " · quá hạn" : ""}</div></td>
+                    <td className="space-y-1 px-2.5 py-3 text-[13px]">
+                      {money ? <div className="flex flex-wrap items-center gap-1"><Chip s={PAYMENT_STATE[o.payment_state]} />{o.total_vnd ? <span className={o.remaining_vnd > 0 ? "text-danger" : "text-ok"}>còn {fmtNumber(o.remaining_vnd)}</span> : null}</div> : null}
+                      <div className="text-muted">Khai báo <b className="text-ink">{o.items_confirmed}/{o.items_total}</b>{o.items_missing_hs ? <span className="text-danger"> · thiếu HS {o.items_missing_hs}</span> : null}</div>
+                      {o.pkg_total ? <div className="text-muted">Kiện <b className="text-ink">{o.pkg_total}</b> · TQ {o.pkg_cn} · xe {o.pkg_on_trip} · VN {o.pkg_vn}{o.pkg_issue ? <span className="text-danger"> · lỗi {o.pkg_issue}</span> : null}</div> : null}
+                      {o.qty_total ? <div className="text-muted">Giao {fmtNumber(o.qty_delivered)}/{fmtNumber(o.qty_total)} · HĐ <span className={o.qty_invoiced < o.qty_total ? "text-amber-700" : "text-ok"}>{fmtNumber(o.qty_invoiced)}/{fmtNumber(o.qty_total)}</span></div> : null}
+                    </td>
+                    <td className="px-2.5 py-3 text-right"><div className="font-semibold">{fmtNumber(o.goods_cny)} tệ</div>
+                      {money && o.total_vnd ? <div className="text-[13px] text-muted">{vnd(o.total_vnd)}</div> : null}
+                      {profit && o.profit_vnd != null ? <div className={`text-[13px] ${o.profit_vnd >= 0 ? "text-ok" : "text-danger"}`}>lãi {fmtNumber(o.profit_vnd)}</div> : null}
+                      {profit && o.cost_missing ? <div className="text-[12px] text-amber-700">thiếu vốn {o.cost_missing}</div> : null}</td>
+                    <td className="space-y-1.5 px-2.5 py-3">
+                      <InlineNote orderId={o.id} kind="internal" value={o.internal_note} canEdit={s.can("order.write")} placeholder="+ Ghi chú NV" compact />
+                      {o.note ? <div className="rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-[13px]"><span className="font-semibold text-blue-800">Khách: </span><span className="line-clamp-3">{o.note}</span></div> : null}
+                    </td>
+                    <td className="px-2.5 py-3 text-[13px]">{o.cs_name ?? <span className="text-danger">Chưa gán</span>}<div className="text-muted">{fmtDate(o.created_at)}</div>{o.messages_count ? <div className="text-muted">💬 {o.messages_count}</div> : null}</td>
                   </tr>
                 );
               })}
@@ -165,5 +187,17 @@ export function AdminOrderTable({ initial = {}, compactTitle }: { initial?: { st
         </div>
       )}
     </div>
+  );
+}
+
+// Ảnh đại diện đơn (ảnh đầu tiên của đơn hoặc dòng hàng)
+function OrderThumb({ id, n }: { id: string | null; n: number }) {
+  const url = useFileUrl(id ?? "", true, !!id);
+  if (!id) return <span className="flex h-14 w-14 items-center justify-center rounded-lg border border-dashed border-line text-[11px] text-muted">Chưa ảnh</span>;
+  return (
+    <button type="button" onClick={async () => window.open(await fileBlobUrl(id), "_blank", "noopener")} className="relative h-14 w-14 overflow-hidden rounded-lg border border-line bg-surface">
+      {url.data ? <img src={url.data} alt="" className="h-full w-full object-cover" /> : <span className="skeleton block h-full w-full" />}
+      {n > 1 ? <span className="absolute bottom-0 right-0 rounded-tl bg-ink/75 px-1 text-[11px] text-white">+{n - 1}</span> : null}
+    </button>
   );
 }

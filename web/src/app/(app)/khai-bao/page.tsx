@@ -42,8 +42,8 @@ export default function CustomsWorkspace() {
               <tbody>
                 {R.map((i) => (
                   <tr key={i.id} className="border-b border-line/70 align-top">
-                    <td className="py-2"><Link href={`/don-hang/chi-tiet/?id=${i.order_id}`} className="font-mono text-xs font-semibold text-brand-strong">{i.orders?.code}</Link><div className="text-[11px] text-muted">{i.orders?.customer_entities?.legal_name}</div></td>
-                    <td className="py-2"><div className="font-medium">{i.declared_name_vi}</div><div className="text-xs text-muted">{[i.model, i.manufacturer].filter(Boolean).join(" · ")}</div>{w(i.id).map((x, k) => <div key={k} className="text-[11px] text-amber-700">⚠ {x.detail}</div>)}</td>
+                    <td className="py-2"><Link href={`/don-hang/chi-tiet/?id=${i.order_id}`} className="font-mono text-xs font-semibold text-brand-strong">{i.orders?.code}</Link><div className="text-[12.5px] text-muted">{i.orders?.customer_entities?.legal_name}</div></td>
+                    <td className="py-2"><div className="font-medium">{i.declared_name_vi}</div><div className="text-xs text-muted">{[i.model, i.manufacturer].filter(Boolean).join(" · ")}</div>{w(i.id).map((x, k) => <div key={k} className="text-[12.5px] text-amber-700">⚠ {x.detail}</div>)}</td>
                     <td className="py-2 font-mono text-xs">{i.hs_code ?? "—"}</td>
                     <td className="py-2 text-right font-mono">{fmtNumber(i.qty)}</td>
                     <td className="py-2 text-right font-mono">{fmtNumber(i.value_cny)}</td>

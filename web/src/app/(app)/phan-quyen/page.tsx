@@ -39,7 +39,7 @@ export default function PermissionsPage() {
             <tbody>
               {perms.map((p) => (
                 <tr key={p.id} className="border-b border-line/70">
-                  <td className="sticky left-0 bg-white px-3 py-2.5"><div className="font-medium">{p.description}</div><div className="font-mono text-[11px] text-muted">{p.code}</div></td>
+                  <td className="sticky left-0 bg-white px-3 py-2.5"><div className="font-medium">{p.description}</div><div className="font-mono text-[12.5px] text-muted">{p.code}</div></td>
                   {roles.map((r) => {
                     const on = has.has(`${r.id}:${p.id}`);
                     const lock = r.code === "admin" && (p.code === "role.manage" || p.code === "user.manage");

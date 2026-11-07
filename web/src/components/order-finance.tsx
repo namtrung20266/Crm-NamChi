@@ -9,6 +9,8 @@ import { STATEMENT_KIND } from "@/lib/status";
 import { Card, Badge, Empty, Field, inputCls, btn, Notice } from "./ui";
 import { Form, Submit, ActionButton } from "./ui/form";
 import { Modal } from "./modal";
+import { Thumb } from "./files";
+import { uploadFile, useAttachments } from "@/lib/files";
 import { vnd, fmtNumber, fmtDate, fmtDateTime, parseMoney } from "@/lib/format";
 import { viError } from "@/lib/errors";
 
@@ -29,6 +31,7 @@ export function OrderFinance({ order, progress, onChanged }: { order: { id: stri
   const ledger = useQuery({ queryKey: ["order-ledger", id], enabled: finRead, queryFn: () => q<Ledger[]>(supabase.from("wallet_ledger").select("id, amount_vnd, kind, note, created_at, reverses_id").eq("order_id", id).order("created_at")) });
   const sp = useQuery({ queryKey: ["supplier-pay", id], enabled: s.isStaff && s.can("finance.read"), queryFn: () => q<{ id: string; paid_at: string; method: string; amount_cny: number; fx_rate: number; amount_vnd: number; note: string | null }[]>(supabase.from("supplier_payments").select("*").eq("order_id", id).is("deleted_at", null).order("paid_at")) });
   const feeTypes = useQuery({ queryKey: ["fee-types-actual"], enabled: s.can("finance.statement.write"), queryFn: () => q<{ id: string; name: string }[]>(supabase.from("fee_types").select("id, name").eq("calc_method", "actual").order("sort_order")) });
+  const bills = useAttachments("supplier_payment", (sp.data ?? []).map((x) => x.id));
   const [pay, setPay] = useState<null | "coc" | "thanh_toan">(null);
   const [amount, setAmount] = useState("");
   const [err, setErr] = useState<string | null>(null);
@@ -55,7 +58,7 @@ export function OrderFinance({ order, progress, onChanged }: { order: { id: stri
             <table className="w-full text-sm"><tbody>
               {(lines.data ?? []).map((l) => (
                 <tr key={l.id} className="border-b border-line/70">
-                  <td className="py-2 pr-2">{l.label}{!l.visible_to_customer ? <> <Badge>nội bộ</Badge></> : null}{l.source === "manual" ? <span className="ml-1 text-[11px] text-muted">phát sinh</span> : null}</td>
+                  <td className="py-2 pr-2">{l.label}{!l.visible_to_customer ? <> <Badge>nội bộ</Badge></> : null}{l.source === "manual" ? <span className="ml-1 text-[12.5px] text-muted">phát sinh</span> : null}</td>
                   <td className="py-2 text-right text-xs text-muted">{l.rate && l.source === "rule" ? (l.basis_vnd ? `${fmtNumber(l.rate)}% × ${fmtNumber(l.basis_vnd)}` : `${fmtNumber(l.rate)} đ/kg`) : ""}</td>
                   <td className="py-2 text-right font-mono">{vnd(l.amount_vnd)}</td>
                 </tr>
@@ -101,7 +104,7 @@ export function OrderFinance({ order, progress, onChanged }: { order: { id: stri
         {p ? (
           <div className="mb-4 grid grid-cols-2 gap-2 text-center sm:grid-cols-4">
             {[["Phải thu", p.total_vnd, ""], ["Đã trả", p.paid_vnd, "text-ok"], ["Còn lại", p.remaining_vnd, p.remaining_vnd > 0 ? "text-danger" : "text-ok"], ["Số dư ví công ty", p.wallet_balance_vnd, "text-brand-strong"]].map(([l, v, c]) => (
-              <div key={l as string} className="rounded-lg bg-surface p-2.5"><div className="text-[11px] text-muted">{l}</div><div className={`font-mono text-sm font-semibold ${c}`}>{vnd(v as number)}</div></div>
+              <div key={l as string} className="rounded-lg bg-surface p-2.5"><div className="text-[12.5px] text-muted">{l}</div><div className={`font-mono text-sm font-semibold ${c}`}>{vnd(v as number)}</div></div>
             ))}
           </div>
         ) : null}
@@ -134,7 +137,19 @@ export function OrderFinance({ order, progress, onChanged }: { order: { id: stri
         <Card title="Thanh toán nhà cung cấp">
           <ul className="space-y-1.5 text-sm">
             {(sp.data ?? []).length === 0 ? <li className="text-muted">Chưa thanh toán NCC.</li> : null}
-            {(sp.data ?? []).map((x) => <li key={x.id} className="flex justify-between gap-2"><span>{fmtDate(x.paid_at)} · {x.method === "khach_tra_ho" ? "Khách trả hộ" : "Nam Trung trả"} · {fmtNumber(x.amount_cny)} tệ × {fmtNumber(x.fx_rate)}</span><span className="font-mono">{vnd(x.amount_vnd)}</span></li>)}
+            {(sp.data ?? []).map((x) => (
+              <li key={x.id} className="rounded-lg border border-line/70 p-2.5">
+                <div className="flex justify-between gap-2"><span>{fmtDate(x.paid_at)} · {x.method === "khach_tra_ho" ? "Khách trả hộ" : "Nam Trung trả"} · {fmtNumber(x.amount_cny)} tệ × {fmtNumber(x.fx_rate)}{x.note ? ` · ${x.note}` : ""}</span><span className="font-semibold">{vnd(x.amount_vnd)}</span></div>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  {(bills.data ?? []).filter((a) => a.entity_ref_id === x.id).map((a) => <Thumb key={a.id} a={a} size={56} />)}
+                  {!(bills.data ?? []).some((a) => a.entity_ref_id === x.id) ? <span className="text-[13px] text-amber-700">Chưa có ảnh bill</span> : null}
+                  {s.can("finance.receipt.write") ? <label className="cursor-pointer rounded-md border border-dashed border-line px-2 py-1 text-[13px] text-muted hover:text-ink">+ Ảnh bill<input type="file" accept="image/*,.pdf" multiple hidden onChange={async (e) => {
+                    const fs = Array.from(e.target.files ?? []); e.target.value = "";
+                    try { for (const f of fs) await uploadFile(f, "supplier_payment", x.id, { category: "bao_gia_ncc", visibility: "internal" }); bills.refetch(); } catch (er) { alert(er instanceof Error ? er.message : String(er)); }
+                  }} /></label> : null}
+                </div>
+              </li>
+            ))}
           </ul>
           {(sp.data ?? []).length ? <p className="mt-2 text-xs text-muted">Đã trả {fmtNumber((sp.data ?? []).reduce((a, x) => a + Number(x.amount_cny), 0))} / {fmtNumber(order.goods_cny)} tệ. Trả đủ → đơn tự chuyển “Chờ shop giao”.</p> : null}
           {s.can("finance.receipt.write") ? (
@@ -142,15 +157,18 @@ export function OrderFinance({ order, progress, onChanged }: { order: { id: stri
               <Form className="mt-3 grid gap-3 sm:grid-cols-2" resetOnOk invalidate={[["supplier-pay", id], ["order-profit", id]]} onSubmit={async (f) => {
                 const amount_cny = Number(String(f.get("amount_cny") ?? "").replace(",", ".")); const fx_rate = Number(String(f.get("fx_rate") ?? "").replace(",", "."));
                 if (!(amount_cny > 0) || !(fx_rate > 0)) return { error: "Nhập số tệ và tỷ giá thực tế" };
-                const { error } = await supabase.from("supplier_payments").insert({ order_id: id, amount_cny, fx_rate, method: f.get("method"), paid_at: f.get("paid_at") || undefined, note: String(f.get("note") ?? "") || null });
+                const { data: row, error } = await supabase.from("supplier_payments").insert({ order_id: id, amount_cny, fx_rate, method: f.get("method"), paid_at: f.get("paid_at") || undefined, note: String(f.get("note") ?? "") || null }).select("id").single();
                 if (error) return { error: viError(error) };
-                refresh(); return { ok: true };
+                const files = (f.getAll("bill") as File[]).filter((x) => x && x.size > 0);
+                for (const file of files) { try { await uploadFile(file, "supplier_payment", row.id, { category: "bao_gia_ncc", visibility: "internal" }); } catch (e) { refresh(); return { error: `Đã ghi nhận nhưng ảnh bill lỗi: ${e instanceof Error ? e.message : ""}` }; } }
+                refresh(); bills.refetch(); return { ok: true, message: files.length ? `Đã ghi nhận kèm ${files.length} ảnh bill.` : "Đã ghi nhận (chưa có ảnh bill)." };
               }}>
                 <Field label="Số tệ"><input name="amount_cny" inputMode="decimal" defaultValue={order.goods_cny - (sp.data ?? []).reduce((a, x) => a + Number(x.amount_cny), 0) || ""} className={inputCls + " font-mono"} /></Field>
                 <Field label="Tỷ giá thực tế"><input name="fx_rate" inputMode="decimal" className={inputCls + " font-mono"} /></Field>
                 <Field label="Hình thức"><select name="method" className={inputCls}><option value="nam_trung">Nam Trung trả</option><option value="khach_tra_ho">Khách trả hộ / cọc trực tiếp</option></select></Field>
                 <Field label="Ngày trả"><input name="paid_at" type="date" className={inputCls} /></Field>
                 <div className="sm:col-span-2"><Field label="Ghi chú"><input name="note" className={inputCls} /></Field></div>
+                <div className="sm:col-span-2"><Field label="Ảnh bill / chứng từ thanh toán" hint="Lưu Google Drive, chỉ nội bộ"><input name="bill" type="file" accept="image/*,.pdf" multiple className="block w-full text-sm" /></Field></div>
                 <div className="flex justify-end sm:col-span-2"><Submit>Ghi nhận</Submit></div>
               </Form>
             </details>
@@ -168,5 +186,31 @@ export function OrderFinance({ order, progress, onChanged }: { order: { id: stri
         </div>
       </Modal>
     </div>
+  );
+}
+
+// Phiếu tính tiền bản mới nhất (gọn) cho tab Tổng quan
+export function StatementSummary({ orderId, onOpen }: { orderId: string; onOpen?: () => void }) {
+  const s = useSession();
+  const ok = s.isStaff ? s.can("finance.read") : true;
+  const stmt = useQuery({ queryKey: ["stmt", orderId], enabled: ok, queryFn: () => q<Stmt | null>(supabase.from("order_statements").select("*").eq("order_id", orderId).neq("status", "superseded").order("version", { ascending: false }).limit(1).maybeSingle()) });
+  const lines = useQuery({ queryKey: ["stmt-lines", stmt.data?.id], enabled: !!stmt.data?.id, queryFn: () => q<Line[]>(supabase.from("order_statement_lines").select("*").eq("statement_id", stmt.data!.id).order("sort_order")) });
+  if (!ok) return null;
+  const st = stmt.data;
+  return (
+    <Card title={st ? `Phiếu tính tiền · ${STATEMENT_KIND[st.kind]} (bản ${st.version})` : "Phiếu tính tiền"}
+      actions={<div className="flex items-center gap-2">{st ? <Badge tone={st.status === "confirmed" ? "ok" : "warn"}>{st.status === "confirmed" ? "Khách đã xác nhận" : "Chờ khách xác nhận"}</Badge> : null}
+        {onOpen ? <button onClick={onOpen} className="text-sm font-semibold text-brand-strong">Chi tiết →</button> : null}</div>}>
+      {!st ? <p className="text-sm text-muted">Chưa lập phiếu tính tiền.</p> : (
+        <table className="w-full text-[14px]"><tbody>
+          {(lines.data ?? []).filter((l) => s.isStaff || l.visible_to_customer).map((l) => (
+            <tr key={l.id} className="border-b border-line/60"><td className="py-1.5">{l.label}</td><td className="py-1.5 text-right">{vnd(l.amount_vnd)}</td></tr>
+          ))}
+          <tr><td className="pt-2 text-muted">VAT {fmtNumber(st.vat_rate)}%</td><td className="pt-2 text-right">{vnd(st.vat_vnd)}</td></tr>
+          <tr className="text-[15px] font-semibold"><td className="py-1">Tổng phải thanh toán</td><td className="py-1 text-right text-brand-strong">{vnd(st.total_vnd)}</td></tr>
+          <tr><td className="text-muted">Cọc yêu cầu</td><td className="text-right text-muted">{vnd(st.deposit_vnd)}</td></tr>
+        </tbody></table>
+      )}
+    </Card>
   );
 }

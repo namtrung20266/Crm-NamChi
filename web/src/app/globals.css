@@ -25,12 +25,20 @@
   --color-ok: #15803d;
   --color-info: #2563eb;
   --font-sans: "Be Vietnam Pro", "Segoe UI", system-ui, -apple-system, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-mono: "Be Vietnam Pro", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --text-xs: 0.8125rem;
+  --text-xs--line-height: 1.15rem;
+  --text-sm: 0.9375rem;
+  --text-sm--line-height: 1.4rem;
+  --text-base: 1.0625rem;
 }
 
 html {
   -webkit-text-size-adjust: 100%;
 }
+/* Một font duy nhất (Be Vietnam Pro); số dùng chữ số đều cột để bảng thẳng hàng */
+.font-mono, table td, table th { font-variant-numeric: tabular-nums; }
+.font-mono { letter-spacing: 0; }
 body {
   background:
     radial-gradient(1200px 600px at 100% -10%, color-mix(in srgb, var(--brand) 7%, transparent), transparent 60%),
@@ -70,7 +78,7 @@ body {
 @media (max-width: 1023px) { .auth-headline { font-size: 30px; } }
 
 .auth-chip {
-  font-family: var(--font-mono); font-size: 11px; letter-spacing: .04em; padding: 6px 10px; border-radius: 999px;
+  font-family: var(--font-sans); font-size: 12px; letter-spacing: .04em; padding: 6px 10px; border-radius: 999px;
   border: 1px solid rgba(255,255,255,.12); color: rgba(255,255,255,.55); background: rgba(255,255,255,.03);
   animation: auth-chip 6s ease-in-out infinite;
 }

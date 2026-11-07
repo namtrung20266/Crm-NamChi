@@ -8,6 +8,7 @@ import { useCustomers, useEntities } from "@/lib/data";
 import { rpc, PHASES, type Tone } from "@/lib/meta";
 import { Card, Badge, Skeleton, inputCls } from "./ui";
 import { AdminOrderTable } from "./admin-orders";
+import { RecentChat } from "./recent-chat";
 import { vnd, fmtNumber } from "@/lib/format";
 
 type Dash = {
@@ -38,9 +39,9 @@ function Kpi({ label, value, sub, tone = "ink", href }: { label: string; value: 
   const c = { ink: "text-ink", danger: "text-danger", ok: "text-ok", brand: "text-brand-strong" }[tone];
   const body = (
     <div className="card h-full p-4 transition hover:-translate-y-0.5 hover:shadow-md">
-      <div className="text-[11.5px] font-medium text-muted">{label}</div>
+      <div className="text-[13px] font-medium text-muted">{label}</div>
       <div className={`mt-1 font-mono text-xl font-semibold tracking-tight ${c}`}>{value}</div>
-      {sub ? <div className="mt-0.5 text-[11px] text-muted">{sub}</div> : null}
+      {sub ? <div className="mt-0.5 text-[12.5px] text-muted">{sub}</div> : null}
     </div>
   );
   return href ? <Link href={href}>{body}</Link> : body;
@@ -66,7 +67,7 @@ export function AdminDashboard() {
     <div className="space-y-5">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-brand">Nam Trung · quản trị</p>
+          <p className="font-mono text-[12.5px] uppercase tracking-[0.22em] text-brand">Nam Trung · quản trị</p>
           <h1 className="mt-1 text-2xl font-semibold tracking-tight">Dashboard vận hành</h1>
           <p className="text-sm text-muted">{s.full_name} · số liệu từ hệ thống, tự làm mới 2 phút/lần</p>
         </div>
@@ -107,7 +108,7 @@ export function AdminDashboard() {
             </> : null}
           </div>
 
-          <div className="grid gap-5 xl:grid-cols-[1.25fr_1fr]">
+          <div className="grid gap-5 xl:grid-cols-[1.1fr_1fr_1fr]">
             <Card title="Đơn đang ở đâu" actions={<span className="text-xs text-muted">đỏ = quá hạn SLA của bước</span>}>
               <div className="space-y-4">
                 {Object.entries(PHASES).filter(([k]) => k !== "ket_thuc").map(([ph, label]) => {
@@ -115,10 +116,10 @@ export function AdminDashboard() {
                   if (!st.some((b) => b.count)) return null;
                   return (
                     <div key={ph}>
-                      <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted">{label} · {st.reduce((a, b) => a + b.count, 0)}</div>
+                      <div className="mb-1.5 text-[12.5px] font-semibold uppercase tracking-wider text-muted">{label} · {st.reduce((a, b) => a + b.count, 0)}</div>
                       <ul className="space-y-1.5">
                         {st.filter((b) => b.count > 0).map((b) => (
-                          <li key={b.code} className="grid grid-cols-[150px_1fr_56px] items-center gap-2 text-[13px]">
+                          <li key={b.code} className="grid grid-cols-[150px_1fr_56px] items-center gap-2 text-[14px]">
                             <span className="truncate">{b.label}</span>
                             <span className="flex h-2.5 overflow-hidden rounded-full bg-surface">
                               <span className={TONE_BG[b.tone]} style={{ width: `${((b.count - b.overdue) / maxStatus) * 100}%` }} />
@@ -135,11 +136,12 @@ export function AdminDashboard() {
               </div>
             </Card>
 
+            <RecentChat height={420} />
             <Card title={`Cần xử lý (${x.alerts.length})`}>
               {x.alerts.length === 0 ? <p className="text-sm text-ok">Không có cảnh báo. Mọi đơn đang đúng tiến độ.</p> : (
                 <ul className="max-h-[420px] divide-y divide-line/70 overflow-y-auto">
                   {x.alerts.map((a, i) => (
-                    <li key={i}><Link href={`/don-hang/chi-tiet/?id=${a.order_id}`} className="flex gap-2.5 py-2 text-[13px] hover:text-brand-strong">
+                    <li key={i}><Link href={`/don-hang/chi-tiet/?id=${a.order_id}`} className="flex gap-2.5 py-2 text-[14px] hover:text-brand-strong">
                       <span>{ALERT[a.type] ?? "•"}</span>
                       <span className="min-w-0 flex-1"><span className="font-mono font-semibold">{a.code}</span> <span className="text-muted">· {a.entity}</span><span className="block text-xs text-ink/80">{a.text}</span></span>
                       <Badge tone={a.severity === 1 ? "danger" : a.severity === 2 ? "warn" : "neutral"}>{a.severity === 1 ? "Gấp" : a.severity === 2 ? "Cần làm" : "Theo dõi"}</Badge>
@@ -157,8 +159,8 @@ export function AdminDashboard() {
                   {x.trend.map((t) => (
                     <div key={t.week} className="group relative flex h-full flex-1 flex-col justify-end">
                       <div className="rounded-t bg-brand/80 transition group-hover:bg-brand" style={{ height: `${(t.orders / maxTrend) * 85}%`, minHeight: t.orders ? 4 : 0 }} />
-                      <div className="mt-1 text-center font-mono text-[9.5px] text-muted">{t.week}</div>
-                      <div className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1 hidden -translate-x-1/2 whitespace-nowrap rounded bg-ink px-2 py-1 text-[11px] text-white group-hover:block">
+                      <div className="mt-1 text-center font-mono text-[11px] text-muted">{t.week}</div>
+                      <div className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1 hidden -translate-x-1/2 whitespace-nowrap rounded bg-ink px-2 py-1 text-[12.5px] text-white group-hover:block">
                         {t.orders} đơn · {fmtNumber(t.goods_cny)} tệ{t.revenue != null ? ` · ${vnd(t.revenue)}` : ""}
                       </div>
                     </div>
@@ -173,8 +175,8 @@ export function AdminDashboard() {
               </div>
             </Card>
             <Card title="Theo CSKH phụ trách">
-              <table className="w-full text-[13px]">
-                <thead><tr className="text-left text-[11px] uppercase text-muted"><th className="pb-2">Nhân viên</th><th className="pb-2 text-right">Đang chạy</th><th className="pb-2 text-right">Quá hạn</th><th className="pb-2 text-right">Mới kỳ</th></tr></thead>
+              <table className="w-full text-[14px]">
+                <thead><tr className="text-left text-[12.5px] uppercase text-muted"><th className="pb-2">Nhân viên</th><th className="pb-2 text-right">Đang chạy</th><th className="pb-2 text-right">Quá hạn</th><th className="pb-2 text-right">Mới kỳ</th></tr></thead>
                 <tbody>{x.by_cs.map((c) => (
                   <tr key={c.user_id ?? "none"} className="border-t border-line/70"><td className={`py-1.5 ${c.user_id ? "" : "text-danger"}`}>{c.name}</td><td className="text-right font-mono">{c.active}</td>
                     <td className={`text-right font-mono ${c.overdue ? "font-semibold text-danger" : ""}`}>{c.overdue}</td><td className="text-right font-mono">{c.new_period}</td></tr>
@@ -185,12 +187,12 @@ export function AdminDashboard() {
 
           <Card title="Theo công ty con (khách vận hành)">
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[720px] text-[13px]">
-                <thead><tr className="text-left text-[11px] uppercase text-muted"><th className="pb-2">Công ty</th><th className="pb-2 text-right">Tổng đơn</th><th className="pb-2 text-right">Đang chạy</th><th className="pb-2 text-right">Mới kỳ</th>
+              <table className="w-full min-w-[720px] text-[14px]">
+                <thead><tr className="text-left text-[12.5px] uppercase text-muted"><th className="pb-2">Công ty</th><th className="pb-2 text-right">Tổng đơn</th><th className="pb-2 text-right">Đang chạy</th><th className="pb-2 text-right">Mới kỳ</th>
                   {x.money ? <><th className="pb-2 text-right">Doanh thu kỳ</th><th className="pb-2 text-right">Còn phải thu</th><th className="pb-2 text-right">Số dư ví</th></> : null}</tr></thead>
                 <tbody>{x.by_entity.map((e) => (
                   <tr key={e.entity_id} className="border-t border-line/70 hover:bg-surface">
-                    <td className="py-2"><button onClick={() => { setEnt(e.entity_id); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="text-left font-medium hover:text-brand-strong">{e.legal_name}</button><div className="font-mono text-[10.5px] text-muted">{e.customer_code} · {e.code}</div></td>
+                    <td className="py-2"><button onClick={() => { setEnt(e.entity_id); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="text-left font-medium hover:text-brand-strong">{e.legal_name}</button><div className="font-mono text-[12px] text-muted">{e.customer_code} · {e.code}</div></td>
                     <td className="text-right font-mono">{e.orders}</td><td className="text-right font-mono">{e.active}</td><td className="text-right font-mono">{e.new_period}</td>
                     {x.money ? <><td className="text-right font-mono">{vnd(e.revenue_period)}</td><td className={`text-right font-mono ${Number(e.receivable) > 0 ? "text-danger" : ""}`}>{vnd(e.receivable)}</td>
                       <td className={`text-right font-mono ${Number(e.wallet) < 0 ? "text-danger" : "text-ok"}`}>{vnd(e.wallet)}</td></> : null}

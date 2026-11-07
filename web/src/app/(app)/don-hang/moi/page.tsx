@@ -158,15 +158,15 @@ export default function NewOrderPage() {
         <div className="space-y-4 xl:sticky xl:top-6 xl:self-start">
           <Card title="Ước tính phí (theo biểu phí)">
             {!preview ? <p className="text-sm text-muted">Chọn khách và nhập tổng tiền hàng để xem ước tính.</p> : (
-              <table className="w-full text-[13px]"><tbody>
+              <table className="w-full text-[14px]"><tbody>
                 <tr><td className="py-1">Tiền hàng ({fmtNumber(num(v.goods_cny))} × {fmtNumber(preview.fx_rate)})</td><td className="text-right font-mono">{vnd(preview.goods_vnd)}</td></tr>
-                {preview.lines.map((l) => <tr key={l.label}><td className="py-1 text-muted">{l.label} <span className="text-[11px]">({fmtNumber(l.rate)}{l.method === "per_kg" ? "đ/kg" : "%"})</span></td><td className="text-right font-mono">{l.method === "per_kg" ? "theo cân" : vnd(l.amount_vnd)}</td></tr>)}
+                {preview.lines.map((l) => <tr key={l.label}><td className="py-1 text-muted">{l.label} <span className="text-[12.5px]">({fmtNumber(l.rate)}{l.method === "per_kg" ? "đ/kg" : "%"})</span></td><td className="text-right font-mono">{l.method === "per_kg" ? "theo cân" : vnd(l.amount_vnd)}</td></tr>)}
                 <tr className="border-t border-line"><td className="py-1 text-muted">VAT</td><td className="text-right font-mono">{vnd(preview.vat_vnd)}</td></tr>
                 <tr className="font-semibold"><td className="py-1">Ước tính (chưa gồm cước)</td><td className="text-right font-mono text-brand-strong">{vnd(preview.total_vnd)}</td></tr>
                 <tr><td className="py-1 text-muted">Cọc dự kiến ({preview.deposit_rate}%)</td><td className="text-right font-mono">{vnd(preview.deposit_vnd)}</td></tr>
               </tbody></table>
             )}
-            <p className="mt-3 text-[11px] text-muted">Số chính thức theo phiếu tính tiền CSKH lập sau khi chốt cân nặng và phí phát sinh.</p>
+            <p className="mt-3 text-[12.5px] text-muted">Số chính thức theo phiếu tính tiền CSKH lập sau khi chốt cân nặng và phí phát sinh.</p>
           </Card>
           <Card>
             {missing.length ? <p className="mb-3 text-xs text-amber-700">Còn thiếu: {missing.join(", ")}</p> : <p className="mb-3 text-xs text-ok">Đủ thông tin để gửi.</p>}

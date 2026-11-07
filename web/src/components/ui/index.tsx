@@ -4,7 +4,7 @@ export function PageHeader({ eyebrow, title, desc, actions }: { eyebrow?: string
   return (
     <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
       <div className="min-w-0">
-        {eyebrow ? <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-brand">{eyebrow}</p> : null}
+        {eyebrow ? <p className="font-mono text-[12.5px] uppercase tracking-[0.22em] text-brand">{eyebrow}</p> : null}
         <h1 className="mt-1 text-2xl font-semibold tracking-tight">{title}</h1>
         {desc ? <p className="mt-1 max-w-2xl text-sm text-muted">{desc}</p> : null}
       </div>
@@ -45,7 +45,7 @@ export const inputCls =
 export function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
     <label className="block space-y-1.5">
-      <span className="block text-[13px] font-medium text-ink">{label}</span>
+      <span className="block text-[14px] font-medium text-ink">{label}</span>
       {children}
       {hint ? <span className="block text-xs text-muted">{hint}</span> : null}
     </label>
@@ -61,7 +61,7 @@ const tones = {
   info: "bg-blue-50 text-blue-700 border-blue-200",
 };
 export function Badge({ tone = "neutral", children }: { tone?: keyof typeof tones; children: React.ReactNode }) {
-  return <span className={`inline-flex items-center rounded-md border px-1.5 py-0.5 text-[11px] font-medium ${tones[tone]}`}>{children}</span>;
+  return <span className={`inline-flex items-center rounded-md border px-1.5 py-0.5 text-[12.5px] font-medium ${tones[tone]}`}>{children}</span>;
 }
 
 export function Empty({ title, desc }: { title: string; desc?: string }) {

@@ -95,8 +95,8 @@ export function OrderItems({ orderId, readOnly = false }: { orderId: string; rea
         <button onClick={() => { setEdit(null); setAdding(true); }} className={btn.primary + " h-8 px-3 text-xs"}>+ Thêm dòng</button></div>) : null}>
       {items.isLoading ? <Skeleton rows={2} /> : I.length === 0 ? <p className="text-sm text-muted">Chưa có dòng hàng. {write ? "Dán thẳng bảng từ Excel (có hoặc không có dòng tiêu đề) để nhập nhanh." : ""}</p> : (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[920px] text-[13px]">
-            <thead><tr className="border-b border-line text-left text-[11px] uppercase text-muted">
+          <table className="w-full min-w-[920px] text-[14px]">
+            <thead><tr className="border-b border-line text-left text-[12.5px] uppercase text-muted">
               <th className="py-2">#</th><th>Ảnh</th><th>Tên khai báo · model</th><th>HS</th><th className="text-right">SL</th><th className="text-right">Đơn giá</th><th className="text-right">Trị giá</th><th>Chất liệu · quy cách</th><th>Chuyên ngành</th><th>TT</th><th />
             </tr></thead>
             <tbody>{I.map((i) => {
@@ -104,16 +104,16 @@ export function OrderItems({ orderId, readOnly = false }: { orderId: string; rea
               return (
                 <tr key={i.id} className="border-b border-line/70 align-top">
                   <td className="py-2 font-mono text-xs">{i.line_no}</td>
-                  <td className="py-2"><div className="flex gap-1">{pics.slice(0, 2).map((a) => <Thumb key={a.id} a={a} size={44} />)}{pics.length > 2 ? <span className="self-center text-[10px] text-muted">+{pics.length - 2}</span> : null}
-                    {!pics.length ? <span className="flex h-11 w-11 items-center justify-center rounded-lg border border-dashed border-danger/40 text-[10px] text-danger">Thiếu ảnh</span> : null}</div></td>
-                  <td className="max-w-[240px] py-2"><div className="font-medium">{i.declared_name_vi}</div><div className="text-[11px] text-muted">{[i.model, i.brand, i.name_cn].filter(Boolean).join(" · ")}</div>
-                    {w(i.id).map((x, k) => <div key={k} className="mt-0.5 text-[11px] text-amber-700">⚠ {x.detail}</div>)}</td>
+                  <td className="py-2"><div className="flex gap-1">{pics.slice(0, 2).map((a) => <Thumb key={a.id} a={a} size={44} />)}{pics.length > 2 ? <span className="self-center text-[12px] text-muted">+{pics.length - 2}</span> : null}
+                    {!pics.length ? <span className="flex h-11 w-11 items-center justify-center rounded-lg border border-dashed border-danger/40 text-[12px] text-danger">Thiếu ảnh</span> : null}</div></td>
+                  <td className="max-w-[240px] py-2"><div className="font-medium">{i.declared_name_vi}</div><div className="text-[12.5px] text-muted">{[i.model, i.brand, i.name_cn].filter(Boolean).join(" · ")}</div>
+                    {w(i.id).map((x, k) => <div key={k} className="mt-0.5 text-[12.5px] text-amber-700">⚠ {x.detail}</div>)}</td>
                   <td className="py-2 font-mono text-xs">{i.hs_code ?? <span className="text-danger">—</span>}</td>
-                  <td className="py-2 text-right font-mono">{fmtNumber(i.qty)} <span className="text-[10px] text-muted">{i.uom}</span></td>
+                  <td className="py-2 text-right font-mono">{fmtNumber(i.qty)} <span className="text-[12px] text-muted">{i.uom}</span></td>
                   <td className="py-2 text-right font-mono">{fmtNumber(i.unit_price_cny)}</td>
                   <td className="py-2 text-right font-mono">{fmtNumber(i.value_cny)}</td>
-                  <td className="max-w-[160px] py-2 text-[11px] text-muted">{[i.material, i.spec, i.packing].filter(Boolean).join(" · ") || "—"}</td>
-                  <td className="py-2 text-[11px]">{i.compliance_need === "none" ? "—" : `${COMPLIANCE[i.compliance_need]}: ${COMPLIANCE_STATUS[i.compliance_status]}`}</td>
+                  <td className="max-w-[160px] py-2 text-[12.5px] text-muted">{[i.material, i.spec, i.packing].filter(Boolean).join(" · ") || "—"}</td>
+                  <td className="py-2 text-[12.5px]">{i.compliance_need === "none" ? "—" : `${COMPLIANCE[i.compliance_need]}: ${COMPLIANCE_STATUS[i.compliance_status]}`}</td>
                   <td className="py-2">{i.status === "da_xac_nhan" ? <Badge tone="ok">Đã XN</Badge> : <Badge tone="warn">Nháp</Badge>}</td>
                   <td className="py-2 text-right"><div className="flex justify-end gap-1.5">
                     {write && (s.isStaff || i.status !== "da_xac_nhan") ? <button onClick={() => { setAdding(false); setEdit(i); }} className="text-xs font-semibold text-brand-strong">Sửa</button> : null}
@@ -150,7 +150,7 @@ export function OrderItems({ orderId, readOnly = false }: { orderId: string; rea
             <Field label="Tiến độ hồ sơ"><select name="compliance_status" defaultValue={F?.compliance_status ?? "khong_can"} className={inputCls}>{Object.entries(COMPLIANCE_STATUS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></Field>
           </> : null}
           <div className="sm:col-span-4"><Field label="Ảnh sản phẩm / tem mác (chọn nhiều)" hint="Lưu Google Drive, gắn vào dòng này. Ảnh lớn tự thu nhỏ."><input name="images" type="file" multiple accept="image/*" className="block w-full text-sm" /></Field></div>
-          {edit ? <div className="sm:col-span-4"><div className="text-[12px] font-medium">Ảnh đã có</div><div className="mt-1 flex flex-wrap gap-2">{(imgs.data ?? []).filter((a) => a.entity_ref_id === edit.id).map((a) => <Thumb key={a.id} a={a} />)}</div></div> : null}
+          {edit ? <div className="sm:col-span-4"><div className="text-[13.5px] font-medium">Ảnh đã có</div><div className="mt-1 flex flex-wrap gap-2">{(imgs.data ?? []).filter((a) => a.entity_ref_id === edit.id).map((a) => <Thumb key={a.id} a={a} />)}</div></div> : null}
           <div className="flex justify-end gap-2 sm:col-span-4"><button type="button" onClick={() => { setEdit(null); setAdding(false); }} className={btn.ghost}>Hủy</button><Submit>{edit ? "Lưu dòng" : "Thêm dòng"}</Submit></div>
         </Form>
       </Modal>
@@ -160,7 +160,7 @@ export function OrderItems({ orderId, readOnly = false }: { orderId: string; rea
         <textarea value={paste ?? ""} onChange={(e) => setPaste(e.target.value)} rows={6} autoFocus className={inputCls + " h-auto py-2 font-mono text-xs"} placeholder="Dán (Ctrl+V) tại đây…" />
         {pv && pv.data.length ? (
           <div className="mt-3 max-h-64 overflow-auto rounded-lg border border-line">
-            <table className="w-full text-[11.5px]"><thead className="bg-surface"><tr>{pv.map.map((k, i) => <th key={i} className={`px-2 py-1 text-left ${k ? "text-brand-strong" : "text-muted line-through"}`}>{k ? COLS.find((c) => c[0] === k)?.[1] : "bỏ qua"}</th>)}</tr></thead>
+            <table className="w-full text-[13px]"><thead className="bg-surface"><tr>{pv.map.map((k, i) => <th key={i} className={`px-2 py-1 text-left ${k ? "text-brand-strong" : "text-muted line-through"}`}>{k ? COLS.find((c) => c[0] === k)?.[1] : "bỏ qua"}</th>)}</tr></thead>
               <tbody>{pv.data.slice(0, 30).map((r, i) => <tr key={i} className="border-t border-line/60">{pv.map.map((_, j) => <td key={j} className="px-2 py-1">{r[j]}</td>)}</tr>)}</tbody></table>
           </div>
         ) : null}

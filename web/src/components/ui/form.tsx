@@ -83,7 +83,7 @@ export function ActionButton({ onClick, children, confirmText, variant = "second
           catch (e) { setErr(viError(e)); }
           finally { setPending(false); }
         }}>{pending ? "…" : children}</button>
-      {err ? <span className="text-[11px] text-danger">{err}</span> : null}
+      {err ? <span className="text-[12.5px] text-danger">{err}</span> : null}
     </span>
   );
 }

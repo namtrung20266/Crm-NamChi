@@ -85,7 +85,7 @@ export default function WalletPage() {
           <button key={b.entity_id} onClick={() => setEnt(ent === b.entity_id ? "" : b.entity_id)} className={`card p-4 text-left transition hover:-translate-y-0.5 ${ent === b.entity_id ? "ring-2 ring-brand" : ""}`}>
             <div className="truncate text-xs text-muted">{b.legal_name}</div>
             <div className={`mt-1 font-mono text-xl font-semibold ${b.balance_vnd < 0 ? "text-danger" : "text-brand-strong"}`}>{vnd(b.balance_vnd)}</div>
-            <div className="mt-1 text-[11px] text-muted">Nạp {vnd(b.topup_vnd)} · đã dùng {vnd(b.spent_vnd)}{b.pending_topups ? <span className="text-amber-700"> · {b.pending_topups} chờ duyệt</span> : null}</div>
+            <div className="mt-1 text-[12.5px] text-muted">Nạp {vnd(b.topup_vnd)} · đã dùng {vnd(b.spent_vnd)}{b.pending_topups ? <span className="text-amber-700"> · {b.pending_topups} chờ duyệt</span> : null}</div>
           </button>
         ))}
       </div>
@@ -97,7 +97,7 @@ export default function WalletPage() {
               const pics = (proofs.data ?? []).filter((a) => a.entity_ref_id === t.id);
               return (
                 <li key={t.id} className="flex flex-wrap items-start gap-3 py-3">
-                  <div className="flex gap-1.5">{pics.length ? pics.slice(0, 2).map((a) => <Thumb key={a.id} a={a} size={56} />) : <span className="flex h-14 w-14 items-center justify-center rounded-lg border border-dashed border-line text-[10px] text-muted">Chưa có ảnh</span>}</div>
+                  <div className="flex gap-1.5">{pics.length ? pics.slice(0, 2).map((a) => <Thumb key={a.id} a={a} size={56} />) : <span className="flex h-14 w-14 items-center justify-center rounded-lg border border-dashed border-line text-[12px] text-muted">Chưa có ảnh</span>}</div>
                   <div className="min-w-0 flex-1 text-sm">
                     <div className="flex flex-wrap items-center gap-2"><span className="font-mono font-semibold">{t.code}</span><Badge tone={TS[t.status][1]}>{TS[t.status][0]}</Badge><span className="font-mono font-semibold text-brand-strong">{vnd(t.amount_vnd)}</span></div>
                     <div className="text-xs text-muted">{entName(t.entity_id)} · CK {fmtDate(t.transfer_date)} · {lookupLabel(accounts.data, t.account_code)}{t.bank_ref ? ` · mã GD ${t.bank_ref}` : ""}{t.payer_name ? ` · ${t.payer_name}` : ""}</div>
@@ -116,7 +116,7 @@ export default function WalletPage() {
           {(ledger.data ?? []).length === 0 ? <p className="text-sm text-muted">Chưa có phát sinh.</p> : (
             <ul className="max-h-[560px] divide-y divide-line/70 overflow-y-auto text-sm">{(ledger.data ?? []).map((l) => (
               <li key={l.id} className="flex items-start justify-between gap-2 py-2">
-                <div className="min-w-0"><div className="font-medium">{KIND[l.kind] ?? l.kind} <span className="font-mono text-[10.5px] text-muted">#{l.id}</span></div><div className="truncate text-xs text-muted">{fmtDateTime(l.created_at)} · {entName(l.entity_id)}{l.note ? ` · ${l.note}` : ""}</div></div>
+                <div className="min-w-0"><div className="font-medium">{KIND[l.kind] ?? l.kind} <span className="font-mono text-[12px] text-muted">#{l.id}</span></div><div className="truncate text-xs text-muted">{fmtDateTime(l.created_at)} · {entName(l.entity_id)}{l.note ? ` · ${l.note}` : ""}</div></div>
                 <div className="flex shrink-0 items-center gap-2"><span className={`font-mono font-semibold ${l.amount_vnd > 0 ? "text-ok" : "text-danger"}`}>{l.amount_vnd > 0 ? "+" : ""}{vnd(l.amount_vnd)}</span>
                   {manage && l.kind !== "dao" && !(ledger.data ?? []).some((x) => x.reverses_id === l.id) ? <ActionButton onClick={async () => { const r = prompt("Lý do đảo (tối thiểu 5 ký tự):"); if (!r) return; await rpc("reverse_wallet_entry", { p_entry_id: l.id, p_reason: r }); refresh(); }}>Đảo</ActionButton> : null}</div>
               </li>))}</ul>

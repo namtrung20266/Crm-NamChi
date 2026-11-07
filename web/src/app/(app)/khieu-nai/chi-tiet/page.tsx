@@ -37,7 +37,7 @@ function Detail() {
           <ul className="space-y-3">{(msgs.data ?? []).map((m) => { const p = who(m.created_by); const mine = m.created_by === s.user_id; return (
             <li key={m.id} className={`flex ${mine ? "justify-end" : ""}`}>
               <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm ${m.internal ? "border border-dashed border-amber-300 bg-amber-50" : mine ? "bg-brand text-white" : "bg-surface"}`}>
-                <div className={`text-[11px] ${mine && !m.internal ? "text-white/70" : "text-muted"}`}>{p?.full_name ?? "—"} · {fmtDateTime(m.created_at)}{m.internal ? " · nội bộ" : ""}</div>{m.body}
+                <div className={`text-[12.5px] ${mine && !m.internal ? "text-white/70" : "text-muted"}`}>{p?.full_name ?? "—"} · {fmtDateTime(m.created_at)}{m.internal ? " · nội bộ" : ""}</div>{m.body}
               </div>
             </li>); })}</ul>
           <Form className="mt-4 space-y-2" resetOnOk invalidate={[["claim-msgs", id]]} onSubmit={async (f) => {

@@ -74,8 +74,8 @@ export function Thumb({ a, size = 72 }: { a: Attachment; size?: number }) {
     <button type="button" onClick={open} title={`${a.file_name} · ${fmtSize(a.size_bytes)}`}
       className="group relative shrink-0 overflow-hidden rounded-lg border border-line bg-surface hover:ring-2 hover:ring-brand/40" style={{ width: size, height: size }}>
       {img ? (url.data ? <img src={url.data} alt={a.file_name} className="h-full w-full object-cover" /> : <span className="skeleton block h-full w-full" />)
-        : <span className="flex h-full w-full flex-col items-center justify-center gap-0.5 p-1 text-center"><span className="font-mono text-[10px] font-bold uppercase text-brand-strong">{a.file_name.split(".").pop()}</span><span className="line-clamp-2 text-[9px] leading-tight text-muted">{a.file_name}</span></span>}
-      {a.visibility === "internal" ? <span className="absolute left-0.5 top-0.5 rounded bg-ink/80 px-1 text-[9px] text-white">NB</span> : null}
+        : <span className="flex h-full w-full flex-col items-center justify-center gap-0.5 p-1 text-center"><span className="font-mono text-[12px] font-bold uppercase text-brand-strong">{a.file_name.split(".").pop()}</span><span className="line-clamp-2 text-[11px] leading-tight text-muted">{a.file_name}</span></span>}
+      {a.visibility === "internal" ? <span className="absolute left-0.5 top-0.5 rounded bg-ink/80 px-1 text-[11px] text-white">NB</span> : null}
     </button>
   );
 }
@@ -103,14 +103,14 @@ export function AttachmentGallery({ entityType, refId, empty = "Chưa có file."
                   <button type="button" title="Gỡ file" onClick={async () => {
                     if (!confirm(`Gỡ file ${a.file_name}? (file vẫn lưu trên Drive để đối chiếu)`)) return;
                     try { await rpc("remove_attachment", { p_id: a.id }); qc.invalidateQueries({ queryKey: ["attachments", entityType] }); } catch (e) { alert(viError(e)); }
-                  }} className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-danger text-[11px] text-white opacity-70 shadow hover:opacity-100">×</button>
+                  }} className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-danger text-[12.5px] text-white opacity-70 shadow hover:opacity-100">×</button>
                 ) : null}
               </div>
             ))}
           </div>
         </div>
       ))}
-      <p className="text-[11px] text-muted">{rows.length} file · cập nhật {fmtDateTime(rows[rows.length - 1].created_at)} {rows.some((r) => r.visibility === "internal") ? <Badge>NB = chỉ nội bộ</Badge> : null}</p>
+      <p className="text-[12.5px] text-muted">{rows.length} file · cập nhật {fmtDateTime(rows[rows.length - 1].created_at)} {rows.some((r) => r.visibility === "internal") ? <Badge>NB = chỉ nội bộ</Badge> : null}</p>
     </div>
   );
 }

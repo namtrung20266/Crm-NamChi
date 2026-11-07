@@ -24,7 +24,7 @@ export default function SettingsPage() {
       <PageHeader eyebrow="Hệ thống" title="Cấu hình hệ thống" desc="Một nơi cho mọi tham số, danh mục, trạng thái đơn. Mọi thay đổi có lịch sử; tham số tạo bản mới có ngày hiệu lực nên không làm sai giao dịch cũ." />
       <div className="mb-5 flex gap-1 overflow-x-auto rounded-xl bg-white p-1 ring-1 ring-line">
         {[["tham-so", "Tham số nghiệp vụ"], ["danh-muc", "Danh mục"], ["trang-thai", "Trạng thái đơn"], ["doi-tac", "Đối tác thương mại"]].map(([k, v]) => (
-          <button key={k} onClick={() => setTab(k)} className={`shrink-0 rounded-lg px-3 py-2 text-[13px] font-semibold ${tab === k ? "bg-ink text-white" : "text-muted hover:text-ink"}`}>{v}</button>
+          <button key={k} onClick={() => setTab(k)} className={`shrink-0 rounded-lg px-3 py-2 text-[14px] font-semibold ${tab === k ? "bg-ink text-white" : "text-muted hover:text-ink"}`}>{v}</button>
         ))}
       </div>
       {tab === "tham-so" ? <Params /> : tab === "danh-muc" ? <Lookups /> : tab === "trang-thai" ? <Statuses /> : <Partners />}
@@ -59,7 +59,7 @@ function Params() {
               return (
                 <li key={r.key} className="py-3">
                   <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0"><div className="text-sm font-medium">{SETTING_LABEL[r.key] ?? r.key}</div><div className="font-mono text-[10.5px] text-muted">{r.key} · từ {fmtDate(r.valid_from)}{hist.length > 1 ? ` · ${hist.length} phiên bản` : ""}</div></div>
+                    <div className="min-w-0"><div className="text-sm font-medium">{SETTING_LABEL[r.key] ?? r.key}</div><div className="font-mono text-[12px] text-muted">{r.key} · từ {fmtDate(r.valid_from)}{hist.length > 1 ? ` · ${hist.length} phiên bản` : ""}</div></div>
                     {bool ? (
                       <button onClick={async () => { const note = prompt(`Lý do ${r.value_json ? "TẮT" : "BẬT"}: ${SETTING_LABEL[r.key] ?? r.key}`); if (note === null) return; try { await save(r.key, !r.value_json, "", note); } catch (e) { alert(viError(e)); } }}
                         className={`relative h-6 w-11 shrink-0 rounded-full transition ${r.value_json ? "bg-ok" : "bg-stone-300"}`}><span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition ${r.value_json ? "left-[22px]" : "left-0.5"}`} /></button>
@@ -113,7 +113,7 @@ function Lookups() {
         {all.isLoading ? <Skeleton /> : rows.length === 0 ? <Empty title="Chưa có giá trị" /> : (
           <ul className="divide-y divide-line/70">{rows.map((r) => (
             <li key={r.id} className={`flex items-center justify-between gap-3 py-2 text-sm ${r.is_active ? "" : "opacity-50"}`}>
-              <div className="min-w-0"><div className="font-medium">{r.label}</div><div className="font-mono text-[10.5px] text-muted">{r.code} · thứ tự {r.sort_order}{bank ? ` · ${String((r.meta as Record<string, string>).account_no ?? "")}` : ""}</div></div>
+              <div className="min-w-0"><div className="font-medium">{r.label}</div><div className="font-mono text-[12px] text-muted">{r.code} · thứ tự {r.sort_order}{bank ? ` · ${String((r.meta as Record<string, string>).account_no ?? "")}` : ""}</div></div>
               <div className="flex items-center gap-2">{r.is_active ? null : <Badge>Tắt</Badge>}<button onClick={() => setEdit(r)} className="text-xs font-semibold text-brand-strong">Sửa</button></div>
             </li>))}</ul>
         )}
@@ -153,7 +153,7 @@ function Statuses() {
               <button onClick={() => setEdit(d)} className="text-xs font-semibold text-brand-strong">Sửa</button>
             </li>))}</ul>
         )}
-        <p className="mt-3 text-[11px] text-muted">Mã và thứ tự bước là của hệ thống (logic tự chuyển trạng thái dựa vào đó), chỉ đổi được tên, màu, SLA, thông báo.</p>
+        <p className="mt-3 text-[12.5px] text-muted">Mã và thứ tự bước là của hệ thống (logic tự chuyển trạng thái dựa vào đó), chỉ đổi được tên, màu, SLA, thông báo.</p>
       </Card>
       {edit ? (
         <Card title={`Sửa trạng thái: ${edit.code}`}>

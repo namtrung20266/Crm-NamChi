@@ -73,7 +73,7 @@ function Detail() {
       </section>
       <div className="grid gap-5 xl:grid-cols-[1.3fr_1fr]">
         <div className="space-y-5">
-          <Card title="Bộ dữ liệu chốt & chứng từ" actions={active ? <span className="font-mono text-[11px] text-muted">v{active.version} · {active.content_hash.slice(0, 10)}</span> : null}>
+          <Card title="Bộ dữ liệu chốt & chứng từ" actions={active ? <span className="font-mono text-[12.5px] text-muted">v{active.version} · {active.content_hash.slice(0, 10)}</span> : null}>
             {!active ? <Empty title="Chưa chốt" desc="Gắn list bốc vào xe rồi bấm Chốt list xe. Chứng từ chỉ xuất từ dữ liệu đã chốt." /> : (
               <>
                 <p className="mb-3 text-sm text-muted">{active.lines.length} dòng · {fmtNumber(active.totals.qty as number)} SL · {fmtNumber(active.totals.value_cny as number)} tệ · {String(active.totals.packages)} kiện · {fmtNumber(active.totals.gw_kg as number)} kg — chốt {fmtDateTime(active.created_at)}</p>

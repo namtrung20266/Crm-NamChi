@@ -89,7 +89,7 @@ export default function VnWarehouse() {
                         className={`flex h-14 items-center justify-center rounded-xl border-2 font-mono text-sm font-bold transition ${ok ? "border-ok bg-ok/10 text-ok" : bad ? "border-danger bg-danger/10 text-danger" : "border-line bg-white text-ink hover:border-brand"}`}>
                         {p.label.split("-").pop()}
                       </button>
-                      {s.can("warehouse.write") ? <select value={p.status} onChange={(e) => setPkg(p, e.target.value)} className="h-7 rounded-md border border-line text-[10px]">
+                      {s.can("warehouse.write") ? <select value={p.status} onChange={(e) => setPkg(p, e.target.value)} className="h-7 rounded-md border border-line text-[12px]">
                         {["tren_xe", "ve_vn", "thieu", "hong", "sai_hang"].map((k) => <option key={k} value={k}>{PKG_STATUS[k].label}</option>)}</select> : null}
                     </div>
                   );
