@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase, q } from "@/lib/supabase";
@@ -31,6 +31,16 @@ function Detail() {
   const orderIds = [...new Set((mine.data ?? []).map((m) => itemMap.get(m.order_item_id)?.order_id).filter(Boolean))] as string[];
   const pkgs = useQuery({ queryKey: ["pl-avail-pkgs", orderIds.join(",")], enabled: orderIds.length > 0, queryFn: () => q<Pkg[]>(supabase.from("package_labels").select("id, label, order_id, gw_kg, cbm, status").in("order_id", orderIds).order("label")) });
   const allPk = useQuery({ queryKey: ["pkgs-in-lists"], queryFn: () => q<{ package_id: string; picking_list_id: string; picking_lists: { status: string; code: string } | null }[]>(supabase.from("picking_list_packages").select("package_id, picking_list_id, picking_lists(status, code)")) });
+  // Mặc định chọn tất cả kiện của các đơn trong list (mỗi bộ đơn chỉ tự chọn 1 lần, bỏ chọn tay vẫn giữ)
+  const autoKey = useRef("");
+  useEffect(() => {
+    const key = orderIds.join(",");
+    if (!key || autoKey.current === key || tot.data?.status !== "nhap" || !pkgs.data || !allPk.data || !myPk.data) return;
+    autoKey.current = key;
+    const have = new Set(myPk.data.map((x) => x.package_id));
+    const rows = pkgs.data.filter((p) => !have.has(p.id) && !allPk.data!.some((x) => x.package_id === p.id && x.picking_list_id !== id && x.picking_lists?.status !== "huy")).map((p) => ({ picking_list_id: id, package_id: p.id }));
+    if (rows.length) supabase.from("picking_list_packages").insert(rows).then(() => { qc.invalidateQueries({ queryKey: ["pl-pkgs"] }); qc.invalidateQueries({ queryKey: ["pl"] }); qc.invalidateQueries({ queryKey: ["pkgs-in-lists"] }); });
+  }, [orderIds, pkgs.data, allPk.data, myPk.data, tot.data?.status, id, qc]);
 
   if (tot.isLoading) return <Skeleton rows={8} />;
   const t = tot.data;
@@ -39,6 +49,10 @@ function Detail() {
   const used = (itemId: string) => (loaded.data ?? []).filter((l) => l.order_item_id === itemId && l.picking_lists?.status !== "huy").reduce((a, l) => a + Number(l.qty), 0);
   const refresh = () => ["pl", "pl-items", "pl-pkgs", "loaded-qty", "pkgs-in-lists", "picking-lists"].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
   const inList = new Set((myPk.data ?? []).map((x) => x.package_id));
+  const addAll = async () => {
+    const rows = (pkgs.data ?? []).filter((p) => !inList.has(p.id) && !takenElsewhere(p.id)).map((p) => ({ picking_list_id: id, package_id: p.id }));
+    if (rows.length) { const { error } = await supabase.from("picking_list_packages").insert(rows); if (error) alert(viError(error)); refresh(); }
+  };
   const takenElsewhere = (pid: string) => (allPk.data ?? []).find((x) => x.package_id === pid && x.picking_list_id !== id && x.picking_lists?.status !== "huy")?.picking_lists?.code;
   const candidates = (avail.data ?? []).filter((a) => Number(a.qty) - used(a.id) > 0 && !(mine.data ?? []).some((m) => m.order_item_id === a.id));
 
@@ -63,7 +77,9 @@ function Detail() {
                 </li>); })}</ul>
             )}
           </Card>
-          <Card title="Kiện trong list">
+          <Card title="Kiện trong list" actions={editable && orderIds.length ? <div className="flex gap-3 text-sm">
+            <button className="font-semibold text-brand-strong" onClick={() => addAll()}>Chọn tất cả</button>
+            <button className="text-muted" onClick={async () => { await supabase.from("picking_list_packages").delete().eq("picking_list_id", id); refresh(); }}>Bỏ chọn tất cả</button></div> : null}>
             {orderIds.length === 0 ? <p className="text-sm text-muted">Thêm dòng hàng trước, kiện của các đơn đó sẽ hiện ở đây.</p> : (
               <ul className="grid gap-1.5 sm:grid-cols-2">{(pkgs.data ?? []).map((p) => { const other = takenElsewhere(p.id); const on = inList.has(p.id); return (
                 <li key={p.id}><label className={`flex items-center justify-between gap-2 rounded-lg border px-3 py-2 text-sm ${on ? "border-brand bg-brand-soft" : "border-line"} ${other ? "opacity-50" : ""}`}>

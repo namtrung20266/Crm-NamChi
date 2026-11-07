@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSession } from "@/lib/session";
 import { useStatusDefs, statusOf, PAYMENT_STATE, DELIVERY_STATE, INVOICE_STATE, rpc, type Tone } from "@/lib/meta";
-import { useFileUrl, fileBlobUrl } from "@/lib/files";
+import { UploadThumb } from "./upload-thumb";
 import { Badge, inputCls, Skeleton, Empty, btn, usePaged } from "./ui";
 import { InlineNote } from "./order-note";
 import { vnd, fmtNumber, fmtDate } from "@/lib/format";
@@ -18,12 +18,6 @@ type CO = { id: string; code: string; customer_ref: string | null; entity_name: 
   qty_invoiced: number; invoice_state: string; messages_count: number; unread_count: number };
 const Chip = ({ s }: { s?: { label: string; tone: Tone } }) => (s ? <Badge tone={s.tone}>{s.label}</Badge> : null);
 
-function Thumb({ id, n }: { id: string | null; n: number }) {
-  const u = useFileUrl(id ?? "", true, !!id);
-  if (!id) return <span className="flex h-14 w-14 items-center justify-center rounded-lg border border-dashed border-line text-[11px] text-muted">Chưa ảnh</span>;
-  return <button type="button" onClick={async () => window.open(await fileBlobUrl(id), "_blank", "noopener")} className="relative h-14 w-14 overflow-hidden rounded-lg border border-line">
-    {u.data ? <img src={u.data} alt="" className="h-full w-full object-cover" /> : <span className="skeleton block h-full w-full" />}{n > 1 ? <span className="absolute bottom-0 right-0 bg-ink/70 px-1 text-[11px] text-white">+{n - 1}</span> : null}</button>;
-}
 
 // Danh sách đơn của khách: đếm theo trạng thái, ảnh, thanh toán, kiện, giao, hóa đơn, ghi chú, xuất Excel đơn đã chọn
 export function CustomerOrderList() {
@@ -67,7 +61,7 @@ export function CustomerOrderList() {
             <tbody>{view.map((o) => { const x = statusOf(defs.data, o.status, true); return (
               <tr key={o.id} className={`border-t border-line/70 align-top ${sel.has(o.id) ? "bg-brand-soft/40" : ""}`}>
                 <td className="px-2 py-3"><input type="checkbox" checked={sel.has(o.id)} onChange={(e) => { const n = new Set(sel); if (e.target.checked) n.add(o.id); else n.delete(o.id); setSel(n); }} /></td>
-                <td className="px-1 py-3"><Thumb id={o.thumb_id} n={o.images_count} /></td>
+                <td className="px-1 py-3"><UploadThumb id={o.thumb_id} n={o.images_count} entityType="order" refId={o.id} /></td>
                 <td className="px-2 py-3"><Link href={`/don-hang/chi-tiet/?id=${o.id}`} className="font-semibold text-brand-strong hover:underline">{o.code}</Link>
                   {o.unread_count ? <span className="ml-1 rounded-full bg-brand px-1.5 text-[12px] text-white">{o.unread_count} mới</span> : null}
                   <div className="font-medium">{o.goods_desc ?? "—"}</div><div className="text-[13px] text-muted">{o.entity_name}{o.customer_ref ? ` · PO ${o.customer_ref}` : ""} · {fmtNumber(o.goods_cny)} tệ · {fmtDate(o.created_at)}</div></td>

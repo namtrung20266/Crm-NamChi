@@ -1,0 +1,25 @@
+-- Vòng 5: CSKH chỉ thấy công ty con được phân công; CSKH chỉ sửa trường được phép; cấu hình công ty con áp vào đơn mới
+begin;
+create extension if not exists pgtap;
+select plan(6);
+create temp table ids (k text primary key, v uuid default gen_random_uuid()); grant select on ids to authenticated;
+insert into ids (k) select unnest(array['adm','cs1','LC','SV','TV','O1','O2']);
+create function pg_temp.id(p text) returns uuid language sql stable as $$ select v from ids where k = p $$;
+grant execute on function pg_temp.id(text) to authenticated;
+insert into auth.users (id, email) select v, k || '@t.local' from ids where k in ('adm','cs1');
+insert into public.profiles (user_id, full_name, user_type) values (pg_temp.id('adm'),'Admin','staff'),(pg_temp.id('cs1'),'CS1','staff');
+insert into public.user_roles (user_id, role_id) select pg_temp.id(u), r.id from (values ('adm','admin'),('cs1','cs')) x(u,c) join public.roles r on r.code = x.c;
+insert into public.customers (id, code, name, settings) values (pg_temp.id('LC'),'LC','Lanchi','{"deposit_rate":50}');
+insert into public.customer_entities (id, customer_id, code, legal_name, settings) values (pg_temp.id('SV'),pg_temp.id('LC'),'SV','Sen Vàng','{"deposit_rate":30,"china_tax_payer":"cong_ty"}'),(pg_temp.id('TV'),pg_temp.id('LC'),'TV','Thịnh Vượng','{}');
+insert into public.staff_customer_assignments (staff_user_id, customer_id, entity_id, valid_from) values (pg_temp.id('cs1'), pg_temp.id('LC'), pg_temp.id('SV'), current_date - 1);
+insert into public.orders (id, customer_id, entity_id, goods_cny, fx_rate, status) values (pg_temp.id('O1'), pg_temp.id('LC'), pg_temp.id('SV'), 100, 3600, 'dang_len_don'), (pg_temp.id('O2'), pg_temp.id('LC'), pg_temp.id('TV'), 100, 3600, 'dang_len_don');
+select is((select deposit_rate from public.orders where id = pg_temp.id('O1')), 30.00::numeric(5,2), 'E1 đơn công ty con lấy tỷ lệ cọc riêng 30%');
+select is((select deposit_rate from public.orders where id = pg_temp.id('O2')), 50.00::numeric(5,2), 'E2 công ty con không đặt thì lấy của khách tổng 50%');
+select set_config('request.jwt.claims', json_build_object('sub', pg_temp.id('cs1'))::text, true);
+set local role authenticated;
+select is((select count(*)::int from public.orders), 1, 'E3 CSKH Sen Vàng chỉ thấy đơn Sen Vàng');
+select is((select count(*)::int from public.customer_entities), 1, 'E4 CSKH không thấy công ty con khác');
+select throws_ok($$select public.update_customer_profile('entity', pg_temp.id('SV'), '{"legal_name":"X"}')$$, '42501', null, 'E5 CSKH không sửa tên pháp lý');
+select lives_ok($$select public.update_customer_profile('entity', pg_temp.id('SV'), '{"contact_phone":"0901","settings":{"receiver_name":"Chị Lan"}}')$$, 'E6 CSKH sửa liên hệ, người nhận');
+select * from finish();
+rollback;

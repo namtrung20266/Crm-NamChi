@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useState } from "react";
+import { createPortal } from "react-dom";
 import { useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase, q } from "@/lib/supabase";
@@ -48,6 +49,7 @@ function Detail() {
   const staff = useStaff();
   const [tab, setTab] = useState<string>(sp.get("tab") ?? "tong-quan");
   const [edit, setEdit] = useState(false);
+  const [chat, setChat] = useState(false);
   const order = useQuery({ queryKey: ["order", id], enabled: !!id, queryFn: () => q<O | null>(supabase.from("orders").select("*, customer_entities(code, legal_name), customers(code, name)").eq("id", id).maybeSingle()) });
   const prog = useQuery({ queryKey: ["order-progress", id], enabled: !!id, queryFn: async () => (await rpc<Progress[]>("order_progress", { p_ids: [id] }))[0] ?? null });
   const history = useQuery({ queryKey: ["status-history", id], enabled: !!id, queryFn: () => q<{ id: number; from_status: string | null; to_status: string; changed_at: string; note: string | null; source: string }[]>(supabase.from("order_status_history").select("id, from_status, to_status, changed_at, note, source").eq("order_id", id).order("changed_at", { ascending: false })) });
@@ -59,6 +61,17 @@ function Detail() {
   const st = statusOf(defs.data, o.status, !s.isStaff);
   const canEdit = s.isStaff ? s.can("order.write") : o.status === "dang_len_don";
   const unreadMsg = p?.unread_count ?? 0;
+  const chatBtn = tab !== "trao-doi" ? (
+    <button onClick={() => setChat(true)} className="fixed bottom-20 right-5 z-40 flex items-center gap-2 rounded-full bg-brand px-4 py-3 text-sm font-semibold text-white shadow-[0_10px_30px_-10px_var(--brand)] hover:bg-brand-strong md:bottom-6">
+      💬 Trao đổi{p?.messages_count ? ` (${p.messages_count})` : ""}{unreadMsg ? <span className="rounded-full bg-white px-1.5 text-[12px] text-brand-strong">{unreadMsg} mới</span> : null}
+    </button>) : null;
+  const chatDrawer = chat && typeof document !== "undefined" ? createPortal(
+    <div className="fixed inset-0 z-[90] flex justify-end bg-ink/25" onMouseDown={(e) => e.target === e.currentTarget && setChat(false)}>
+      <aside className="flex h-full w-full max-w-[460px] flex-col bg-white p-4 shadow-2xl">
+        <div className="mb-3 flex items-center justify-between"><div className="font-semibold">Trao đổi · {o.code}</div><button onClick={() => setChat(false)} className="h-9 w-9 rounded-lg text-lg text-muted hover:bg-surface">✕</button></div>
+        <div className="min-h-0 flex-1"><OrderChat orderId={o.id} height="calc(100dvh - 90px)" /></div>
+      </aside>
+    </div>, document.body) : null;
 
   const info = (
     <Card title="Thông tin đơn" actions={canEdit ? <button className={btn.ghost + " h-8 px-3 text-xs"} onClick={() => setEdit((v) => !v)}>{edit ? "Đóng" : "Sửa"}</button> : null}>
@@ -67,10 +80,10 @@ function Detail() {
           const g = (k: string) => String(f.get(k) ?? "").trim() || null;
           const nm = (k: string) => Number(String(f.get(k) ?? "").replace(/\s/g, "").replace(",", ".")) || 0;
           const upd: Record<string, unknown> = { customer_ref: g("customer_ref"), source_channel: g("source_channel"), supplier_name: g("supplier_name"), supplier_link: g("supplier_link"),
-            supplier_contact: g("supplier_contact"), goods_group: g("goods_group"), goods_desc: g("goods_desc"), china_invoice_kind: f.get("china_invoice_kind"), china_tax_base_cny: g("china_tax_base_cny") ? nm("china_tax_base_cny") : null, china_tax_payer: f.get("china_tax_payer") ?? "cong_ty", goods_qty: nm("goods_qty"),
+            supplier_contact: g("supplier_contact"), goods_group: g("goods_group"), goods_desc: g("goods_desc"), china_invoice_kind: f.get("china_invoice_kind"), china_tax_base_cny: g("china_tax_base_cny") ? nm("china_tax_base_cny") : null, china_tax_payer: f.get("china_tax_payer") ?? "khach", china_tax_rate: g("china_tax_rate") ? nm("china_tax_rate") : null, goods_qty: nm("goods_qty"),
             goods_cny: nm("goods_cny"), order_week: g("order_week"), require_label_check: f.get("require_label_check") === "on", require_inspection: f.get("require_inspection") === "on",
             delivery_address: g("delivery_address"), note: g("note"), row_version: o.row_version };
-          if (s.isStaff) Object.assign(upd, { fx_rate: nm("fx_rate"), china_tax_rate: g("china_tax_rate") ? nm("china_tax_rate") : null, vat_rate: nm("vat_rate"), deposit_rate: g("deposit_rate") ? nm("deposit_rate") : null,
+          if (s.isStaff) Object.assign(upd, { fx_rate: nm("fx_rate"), vat_rate: nm("vat_rate"), deposit_rate: g("deposit_rate") ? nm("deposit_rate") : null,
             expected_week: g("expected_week"), delay_reason: g("delay_reason"), internal_note: g("internal_note"), cs_owner_id: g("cs_owner_id") });
           const { error } = await supabase.from("orders").update(upd).eq("id", o.id);
           if (error) return { error: viError(error) };
@@ -78,6 +91,16 @@ function Detail() {
           return { ok: true, message: "Đã lưu. Lập lại phiếu tính tiền nếu số tiền/tỷ giá thay đổi." };
         }}>
           <div className="grid gap-3 sm:grid-cols-3">
+            <div className="rounded-xl border border-brand/30 bg-brand-soft/40 p-3 sm:col-span-3">
+              <div className="mb-2 text-sm font-semibold">Hóa đơn & thuế Trung Quốc</div>
+              <div className="grid gap-3 sm:grid-cols-4">
+                <Field label="1. Loại hóa đơn TQ"><select name="china_invoice_kind" defaultValue={o.china_invoice_kind ?? ""} className={inputCls}>{(kinds.data ?? []).filter((k) => k.is_active).map((k) => <option key={k.code} value={k.code}>{k.label}{Number(k.meta.rate) ? ` (${k.meta.rate}%)` : ""}</option>)}</select></Field>
+                <Field label="2. Mốc tiền tính thuế (tệ)" hint="Trống = tổng tiền hàng"><input name="china_tax_base_cny" defaultValue={o.china_tax_base_cny ?? ""} className={inputCls} /></Field>
+                <Field label="3. Thuế suất (%)" hint="Trống = theo loại HĐ"><input name="china_tax_rate" defaultValue={o.china_tax_rate ?? ""} className={inputCls} /></Field>
+                <Field label="4. Ai chịu tiền thuế"><select name="china_tax_payer" defaultValue={o.china_tax_payer} className={inputCls}><option value="khach">Khách chịu (thu trên phiếu)</option><option value="cong_ty">Nam Trung chịu (không thu khách, ghi sổ hoàn thuế)</option></select></Field>
+              </div>
+              <p className="mt-1 text-[13px] text-muted">Hiện tại: thuế {fmtNumber(o.china_tax_cny)} tệ = {fmtNumber(o.china_tax_base_cny ?? o.goods_cny)} × {fmtNumber(o.china_tax_rate ?? 0)}%. Lưu xong nhớ lập lại phiếu tính tiền.</p>
+            </div>
             <div className="sm:col-span-3"><Field label="Mô tả hàng"><input name="goods_desc" defaultValue={o.goods_desc ?? ""} className={inputCls} /></Field></div>
             <Field label="Mã PO khách"><input name="customer_ref" defaultValue={o.customer_ref ?? ""} className={inputCls} /></Field>
             <Field label="Nguồn đơn"><select name="source_channel" defaultValue={o.source_channel ?? ""} className={inputCls}><option value="">—</option>{(sources.data ?? []).map((x) => <option key={x.code} value={x.code}>{x.label}</option>)}</select></Field>
@@ -87,12 +110,8 @@ function Detail() {
             <Field label="Liên hệ NCC"><input name="supplier_contact" defaultValue={o.supplier_contact ?? ""} className={inputCls} /></Field>
             <Field label="Tiền hàng (tệ)"><input name="goods_cny" defaultValue={o.goods_cny} className={inputCls + " font-mono"} /></Field>
             <Field label="Số lượng"><input name="goods_qty" defaultValue={o.goods_qty} className={inputCls + " font-mono"} /></Field>
-            <Field label="Loại hóa đơn TQ"><select name="china_invoice_kind" defaultValue={o.china_invoice_kind ?? ""} className={inputCls}>{(kinds.data ?? []).filter((k) => k.is_active).map((k) => <option key={k.code} value={k.code}>{k.label}</option>)}</select></Field>
-            <Field label="Mốc tiền tính thuế (tệ, chỉ HĐCD)"><input name="china_tax_base_cny" defaultValue={o.china_tax_base_cny ?? ""} className={inputCls} /></Field>
-            <Field label="Thuế HĐ do ai trả (HĐCD)"><select name="china_tax_payer" defaultValue={o.china_tax_payer} className={inputCls}><option value="cong_ty">Nam Trung trả / tạm ứng</option><option value="khach">Khách tự trả NCC</option></select></Field>
             {s.isStaff ? <>
               <Field label="Tỷ giá chốt"><input name="fx_rate" defaultValue={o.fx_rate} className={inputCls + " font-mono"} /></Field>
-              <Field label="Thuế suất HĐ TQ (%)" hint="Mặc định theo loại HĐ"><input name="china_tax_rate" defaultValue={o.china_tax_rate ?? ""} className={inputCls} /></Field>
               <Field label="VAT (%)"><input name="vat_rate" defaultValue={o.vat_rate} className={inputCls + " font-mono"} /></Field>
               <Field label="Tỷ lệ cọc riêng (%)"><input name="deposit_rate" defaultValue={o.deposit_rate ?? ""} className={inputCls + " font-mono"} /></Field>
               <Field label="Dự kiến về (tuần)"><input name="expected_week" defaultValue={o.expected_week ?? ""} className={inputCls} /></Field>
@@ -111,7 +130,7 @@ function Detail() {
       ) : (
         <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-3">
           {([["Mã PO khách", o.customer_ref], ["Nguồn đơn", o.source_channel ? lookupLabel(sources.data, o.source_channel) : null], ["Nhóm hàng", lookupLabel(groups.data, o.goods_group)],
-            ["Shop / NCC", o.supplier_name], ["Liên hệ NCC", o.supplier_contact], ["Hóa đơn TQ", `${lookupLabel(kinds.data, o.china_invoice_kind)}${o.china_tax_rate ? ` · ${fmtNumber(o.china_tax_rate)}%` : ""}`], ["Thuế xuất HĐ", `${fmtNumber(o.china_tax_cny)} tệ${o.china_tax_base_cny ? ` (mốc ${fmtNumber(o.china_tax_base_cny)} tệ)` : ""} · ${o.china_tax_payer === "khach" ? "khách tự trả" : "Nam Trung trả/tạm ứng"}`], ["Cần trả NCC", `${fmtNumber(Number(o.goods_cny) + (o.china_tax_payer === "khach" ? 0 : Number(o.china_tax_cny)))} tệ`],
+            ["Shop / NCC", o.supplier_name], ["Liên hệ NCC", o.supplier_contact], ["Hóa đơn TQ", `${lookupLabel(kinds.data, o.china_invoice_kind)}${o.china_tax_rate ? ` · ${fmtNumber(o.china_tax_rate)}%` : ""}`], ["Thuế xuất HĐ", `${fmtNumber(o.china_tax_cny)} tệ (${fmtNumber(o.china_tax_rate ?? 0)}% × ${fmtNumber(o.china_tax_base_cny ?? o.goods_cny)}) · ${o.china_tax_payer === "khach" ? "khách chịu" : "Nam Trung chịu"}`], ["Cần trả NCC", `${fmtNumber(Number(o.goods_cny) + Number(o.china_tax_cny))} tệ`],
             ["Tiền hàng", `${fmtNumber(o.goods_cny)} tệ`], ["Số lượng", fmtNumber(o.goods_qty)], ...(s.isStaff ? [["Tỷ giá chốt", fmtNumber(o.fx_rate)], ["Tiền hàng (VND)", vnd(Math.round(o.goods_cny * o.fx_rate))], ["Cọc riêng", o.deposit_rate != null ? `${o.deposit_rate}%` : "Theo cấu hình"]] : []),
             ["Cân tính phí", `${fmtNumber(o.weight_kg)} kg`], ["Khối", `${fmtNumber(o.cbm)} m³`], ["Số kiện", fmtNumber(o.packages)], ["Tuần đặt", o.order_week], ["Dự kiến về", o.expected_week],
             ["Lý do chậm", o.delay_reason ? lookupLabel(delays.data, o.delay_reason) : null], ["CSKH", staff.data?.find((x) => x.user_id === o.cs_owner_id)?.full_name ?? null], ["Gửi đơn lúc", o.submitted_at ? fmtDateTime(o.submitted_at) : null]] as [string, string | null][]).map(([k, v]) => (
@@ -154,11 +173,11 @@ function Detail() {
         ))}
       </div> : null}
 
-      <div className="grid gap-5 xl:grid-cols-[1fr_400px]">
+      <div>
         <div className="min-w-0 space-y-5">
           <div className="flex gap-1 overflow-x-auto rounded-xl bg-white p-1 ring-1 ring-line">
             {TABS.map(([k, v]) => (
-              <button key={k} onClick={() => setTab(k)} className={`relative shrink-0 rounded-lg px-3 py-2 text-[14px] font-semibold transition ${tab === k ? "bg-ink text-white" : "text-muted hover:text-ink"} ${k === "trao-doi" ? "xl:hidden" : ""}`}>
+              <button key={k} onClick={() => setTab(k)} className={`relative shrink-0 rounded-lg px-3 py-2 text-[14px] font-semibold transition ${tab === k ? "bg-ink text-white" : "text-muted hover:text-ink"} `}>
                 {v}{k === "trao-doi" && unreadMsg ? <span className="ml-1 rounded-full bg-brand px-1.5 text-[12px] text-white">{unreadMsg}</span> : null}
               </button>
             ))}
@@ -179,7 +198,7 @@ function Detail() {
           </> : null}
           {tab === "hoa-don" ? <OrderInvoices orderId={o.id} /> : null}
           {tab === "kien" ? <><OrderPackages orderId={o.id} orderCode={o.code} /><DeliveryHistory orderId={o.id} /></> : null}
-          {tab === "trao-doi" ? <Card title="Trao đổi trên đơn" className="xl:hidden"><OrderChat orderId={o.id} /></Card> : null}
+          {tab === "trao-doi" ? <Card title="Trao đổi trên đơn"><OrderChat orderId={o.id} height="min(640px, calc(100dvh - 260px))" /></Card> : null}
           {tab === "lich-su" ? (
             <Card title="Lịch sử trạng thái">
               <ol className="relative space-y-3 border-l border-line pl-4 text-sm">{(history.data ?? []).map((h) => (
@@ -191,10 +210,8 @@ function Detail() {
             </Card>
           ) : null}
         </div>
-        <div className="hidden xl:block">
-          <div className="sticky top-6"><Card title="Trao đổi trên đơn"><OrderChat orderId={o.id} height="min(620px, calc(100dvh - 170px))" /></Card></div>
-        </div>
       </div>
+      {chatBtn}{chatDrawer}
     </>
   );
 }

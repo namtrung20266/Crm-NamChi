@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase, q } from "@/lib/supabase";
 import { useSession } from "@/lib/session";
 import { useEntities, useStaff, type Customer } from "@/lib/data";
+import { CustomerGroupPanel, EntityProfiles } from "@/components/customer-profile";
 import { PageHeader, Card, DataList, Badge, Empty, Field, inputCls, LinkButton, Skeleton } from "@/components/ui";
 import { Form, Submit, ActionButton } from "@/components/ui/form";
 import { CustomerFields, readCustomer } from "@/components/customer-form";
@@ -83,38 +84,12 @@ function Detail() {
             ) : null}
           </Card>
 
+          <div><h2 className="mb-2 text-base font-semibold">Hồ sơ & cấu hình từng công ty con</h2><EntityProfiles customerId={c.id} parent={(c as unknown as { settings?: Record<string, unknown> }).settings ?? {}} /></div>
           <AccountsPanel customerId={id} entities={E} />
         </div>
 
         <div className="space-y-5">
-          <Card title="CSKH phụ trách">
-            <ul className="space-y-2">
-              {(assigns.data ?? []).length === 0 ? <Empty title="Chưa phân công CSKH" /> : null}
-              {(assigns.data ?? []).map((a) => {
-                const on = !a.valid_to || a.valid_to >= today;
-                return (
-                  <li key={a.id} className="flex items-center justify-between gap-2 rounded-lg border border-line px-3 py-2">
-                    <div><div className="text-sm font-medium">{staffName(a.staff_user_id)}</div><div className="text-xs text-muted">Từ {fmtDate(a.valid_from)}{a.valid_to ? ` đến ${fmtDate(a.valid_to)}` : ""}</div></div>
-                    {on ? (manage ? <ActionButton confirmText="Kết thúc phân công? CSKH mất quyền xem khách ngay." invalidate={[["assigns", id]]}
-                      onClick={() => q(supabase.from("staff_customer_assignments").update({ valid_to: a.valid_from >= today ? today : new Date(Date.now() - 864e5).toISOString().slice(0, 10), row_version: a.row_version }).eq("id", a.id))}>Kết thúc</ActionButton>
-                      : <Badge tone="ok">Đang phụ trách</Badge>) : <Badge>Đã kết thúc</Badge>}
-                  </li>
-                );
-              })}
-            </ul>
-            {manage ? (
-              <Form className="mt-4 flex gap-2" invalidate={[["assigns", id]]} onSubmit={async (f) => {
-                const u = String(f.get("staff_user_id") ?? "");
-                if (!u) return { error: "Chọn CSKH" };
-                const { error } = await supabase.from("staff_customer_assignments").insert({ customer_id: id, staff_user_id: u });
-                return error ? { error: viError(error) } : { ok: true };
-              }}>
-                <select name="staff_user_id" className={inputCls} defaultValue=""><option value="" disabled>Chọn CSKH…</option>
-                  {(staff.data ?? []).filter((x) => x.role_code === "cs" && x.is_active).map((x) => <option key={x.user_id} value={x.user_id}>{x.full_name}</option>)}</select>
-                <Submit>Phân công</Submit>
-              </Form>
-            ) : null}
-          </Card>
+          <CustomerGroupPanel customerId={c.id} settings={(c as unknown as { settings?: Record<string, unknown> }).settings ?? {}} onSaved={() => cust.refetch()} />
 
           <Card title={`Người liên hệ (${contacts.data?.length ?? 0})`}>
             <ul className="space-y-2">

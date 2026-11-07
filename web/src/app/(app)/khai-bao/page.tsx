@@ -8,7 +8,7 @@ import { supabase } from "@/lib/supabase";
 import { useSession } from "@/lib/session";
 import { useEntities } from "@/lib/data";
 import { useLookups, rpc, type Tone } from "@/lib/meta";
-import { useFileUrl, fileBlobUrl } from "@/lib/files";
+import { UploadThumb } from "@/components/upload-thumb";
 import { PageHeader, Card, Badge, Empty, inputCls, Skeleton, btn, usePaged } from "@/components/ui";
 import { fmtNumber } from "@/lib/format";
 import { viError } from "@/lib/errors";
@@ -24,12 +24,6 @@ type D = {
 const EDIT: [keyof D, string, string][] = [["declared_name_vi", "Tên khai báo", "min-w-[200px]"], ["hs_code", "HS", "w-24"], ["qty", "SL", "w-20 text-right"], ["uom", "ĐVT", "w-16"],
   ["unit_price_cny", "Đơn giá (tệ)", "w-24 text-right"], ["material", "Chất liệu", "w-28"], ["model", "Model", "w-24"], ["weight_override_kg", "Kg nhập tay", "w-20 text-right"]];
 
-function Img({ id, n }: { id: string | null; n: number }) {
-  const u = useFileUrl(id ?? "", true, !!id);
-  if (!id) return <span className="flex h-11 w-11 items-center justify-center rounded-lg border border-dashed border-danger/40 text-[11px] text-danger">Thiếu ảnh</span>;
-  return <button type="button" onClick={async () => window.open(await fileBlobUrl(id), "_blank", "noopener")} className="relative h-11 w-11 overflow-hidden rounded-lg border border-line">
-    {u.data ? <img src={u.data} alt="" className="h-full w-full object-cover" /> : <span className="skeleton block h-full w-full" />}{n > 1 ? <span className="absolute bottom-0 right-0 bg-ink/70 px-0.5 text-[10px] text-white">{n}</span> : null}</button>;
-}
 
 // Ô sửa tại chỗ: bấm vào để sửa, Enter/rời ô để lưu
 function Cell({ r, k, cls, onSaved }: { r: D; k: keyof D; cls: string; onSaved: () => void }) {
@@ -114,7 +108,7 @@ export default function CustomsDesk() {
               <tbody>{view.map((r) => (
                 <tr key={r.id} className={`border-t border-line/70 align-top ${sel.has(r.id) ? "bg-brand-soft/40" : ""}`}>
                   <td className="px-2 py-2"><input type="checkbox" checked={sel.has(r.id)} onChange={(e) => { const n = new Set(sel); if (e.target.checked) n.add(r.id); else n.delete(r.id); setSel(n); }} /></td>
-                  <td className="px-2 py-2"><div className="flex gap-2"><Img id={r.thumb_id} n={r.images} /><div>
+                  <td className="px-2 py-2"><div className="flex gap-2"><UploadThumb id={r.thumb_id} n={r.images} entityType="order_item" refId={r.id} size={48} /><div>
                     <Link href={`/don-hang/chi-tiet/?id=${r.order_id}&tab=hang`} className="font-semibold text-brand-strong hover:underline">{r.order_code}</Link><span className="text-muted"> · dòng {r.line_no}</span>
                     <div className="max-w-[160px] truncate text-[12.5px] text-muted">{r.entity_name}</div>
                     {r.warnings.map((w, i) => <div key={i} className="text-[12px] text-amber-700">⚠ {w}</div>)}</div></div></td>

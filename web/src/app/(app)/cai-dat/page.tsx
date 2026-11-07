@@ -11,6 +11,7 @@ import { fmtDate } from "@/lib/format";
 import { useCustomers, useStaff } from "@/lib/data";
 import Link from "next/link";
 import { rpc } from "@/lib/meta";
+import { SUPABASE_URL } from "@/lib/env";
 import { viError } from "@/lib/errors";
 
 const ROLE = { importer: "Đứng tên nhập khẩu", exporter: "Người xuất khẩu", supplier: "Nhà cung cấp" } as const;
@@ -20,17 +21,17 @@ type Setting = { id: string; key: string; value_json: unknown; valid_from: strin
 
 export default function SettingsPage() {
   const s = useSession();
-  const [tab, setTab] = useState("tham-so");
+  const [tab, setTab] = useState(() => (typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("tab") : null) ?? "tham-so");
   if (!s.can("settings.manage")) return <Empty title="Bạn không có quyền cấu hình hệ thống" />;
   return (
     <>
       <PageHeader eyebrow="Hệ thống" title="Cấu hình hệ thống" desc="Một nơi cho mọi tham số, danh mục, trạng thái đơn. Mọi thay đổi có lịch sử; tham số tạo bản mới có ngày hiệu lực nên không làm sai giao dịch cũ." />
       <div className="mb-5 flex gap-1 overflow-x-auto rounded-xl bg-white p-1 ring-1 ring-line">
-        {[["tham-so", "Tham số nghiệp vụ"], ["phan-cong", "Phân công CSKH"], ["danh-muc", "Danh mục"], ["trang-thai", "Trạng thái đơn"], ["doi-tac", "Đối tác thương mại"], ["khac", "Biểu phí · quyền · nhân sự"]].map(([k, v]) => (
+        {[["tham-so", "Tham số nghiệp vụ"], ["phan-cong", "Phân công CSKH"], ["danh-muc", "Danh mục"], ["trang-thai", "Trạng thái đơn"], ["doi-tac", "Đối tác thương mại"], ["drive", "Google Drive"], ["khac", "Biểu phí · quyền · nhân sự"]].map(([k, v]) => (
           <button key={k} onClick={() => setTab(k)} className={`shrink-0 rounded-lg px-3 py-2 text-[14px] font-semibold ${tab === k ? "bg-ink text-white" : "text-muted hover:text-ink"}`}>{v}</button>
         ))}
       </div>
-      {tab === "tham-so" ? <Params /> : tab === "phan-cong" ? <Assignments /> : tab === "danh-muc" ? <Lookups /> : tab === "trang-thai" ? <Statuses /> : tab === "khac" ? <Hub /> : <Partners />}
+      {tab === "tham-so" ? <Params /> : tab === "phan-cong" ? <Assignments /> : tab === "danh-muc" ? <Lookups /> : tab === "trang-thai" ? <Statuses /> : tab === "khac" ? <Hub /> : tab === "drive" ? <DriveConfig /> : <Partners />}
     </>
   );
 }
@@ -281,6 +282,63 @@ function Hub() {
       {items.map(([href, t, d]) => (
         <Link key={href} href={href} className="card block p-5 transition hover:-translate-y-0.5 hover:shadow-md"><div className="text-base font-semibold">{t} →</div><div className="mt-1 text-sm text-muted">{d}</div></Link>
       ))}
+    </div>
+  );
+}
+
+// Kết nối Google Drive ngay trên web: nhập Client ID/Secret 1 lần → bấm Kết nối → đăng nhập Google, cho phép → xong
+function DriveConfig() {
+  const st = useQuery({ queryKey: ["drive-status"], queryFn: () => rpc<{ client_id: string | null; has_secret: boolean; connected: boolean; account: string | null; folder_id: string | null; connected_at: string | null }>("drive_config_status") });
+  const [cid, setCid] = useState("");
+  const [sec, setSec] = useState("");
+  const [msg, setMsg] = useState<string | null>(null);
+  const result = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("drive") : null;
+  const callback = `${SUPABASE_URL}/functions/v1/drive-files/oauth`;
+  const x = st.data;
+  const saveClient = async () => { try { await rpc("set_drive_client", { p_client_id: cid || x?.client_id, p_client_secret: sec }); setSec(""); setMsg("Đã lưu Client ID/Secret."); st.refetch(); } catch (e) { setMsg(viError(e)); } };
+  const connect = async () => {
+    try {
+      const b = await rpc<{ client_id: string; state: string }>("drive_oauth_begin");
+      const u = new URL("https://accounts.google.com/o/oauth2/v2/auth");
+      u.search = new URLSearchParams({ client_id: b.client_id, redirect_uri: callback, response_type: "code", access_type: "offline", prompt: "consent",
+        scope: "https://www.googleapis.com/auth/drive.file openid email", state: b.state, include_granted_scopes: "true" }).toString();
+      window.location.href = u.toString();
+    } catch (e) { setMsg(viError(e)); }
+  };
+  const R: Record<string, [string, string]> = { ok: ["✅ Đã kết nối Google Drive. Từ giờ ảnh/file lưu vào Drive.", "bg-ok/10 text-ok"], huy: ["Đã hủy kết nối.", "bg-surface"],
+    loi_state: ["Phiên kết nối hết hạn hoặc không hợp lệ, bấm Kết nối lại.", "bg-danger/10 text-danger"], loi_token: ["Google từ chối. Kiểm tra Client Secret và Redirect URI trong Google Cloud.", "bg-danger/10 text-danger"] };
+  return (
+    <div className="grid gap-5 xl:grid-cols-[1fr_1fr]">
+      <Card title="Trạng thái kết nối">
+        {result && R[result] ? <p className={`mb-3 rounded-lg px-3 py-2 text-sm ${R[result][1]}`}>{R[result][0]}</p> : null}
+        {st.isLoading ? <Skeleton /> : (
+          <div className="space-y-2 text-sm">
+            <div>Client ID: <b>{x?.client_id ? x.client_id.slice(0, 18) + "…" : "chưa nhập"}</b> · Secret: <b>{x?.has_secret ? "đã lưu" : "chưa nhập"}</b></div>
+            <div>Trạng thái: {x?.connected ? <Badge tone="ok">Đã kết nối {x.account ? `· ${x.account}` : ""}</Badge> : <Badge tone="warn">Chưa kết nối</Badge>}</div>
+            {x?.folder_id ? <div>Thư mục gốc: <a className="text-brand-strong underline" target="_blank" rel="noopener noreferrer" href={`https://drive.google.com/drive/folders/${x.folder_id}`}>NAMCHI-ERP (file hệ thống)</a></div> : null}
+            <div className="flex flex-wrap gap-2 pt-2">
+              <button onClick={connect} disabled={!x?.client_id || !x?.has_secret} className={btn.primary}>{x?.connected ? "Kết nối lại" : "Kết nối Google Drive"}</button>
+              {x?.connected ? <button onClick={async () => { if (confirm("Ngắt kết nối Drive? File cũ vẫn ở Drive nhưng hệ thống không mở được cho tới khi kết nối lại.")) { await rpc("drive_disconnect"); st.refetch(); } }} className={btn.ghost}>Ngắt kết nối</button> : null}
+            </div>
+          </div>
+        )}
+        <div className="mt-5 space-y-3 border-t border-line pt-4">
+          <Field label="Google OAuth Client ID"><input value={cid} onChange={(e) => setCid(e.target.value)} placeholder={x?.client_id ?? "…apps.googleusercontent.com"} className={inputCls} /></Field>
+          <Field label="Client Secret" hint="Chỉ lưu, không bao giờ hiển thị lại"><input type="password" value={sec} onChange={(e) => setSec(e.target.value)} className={inputCls} /></Field>
+          <button onClick={saveClient} className={btn.secondary}>Lưu Client ID/Secret</button>
+          {msg ? <p className="text-sm text-muted">{msg}</p> : null}
+        </div>
+      </Card>
+      <Card title="Lấy Client ID/Secret (làm 1 lần, ~5 phút)">
+        <ol className="list-decimal space-y-2 pl-5 text-sm">
+          <li>Đăng nhập <b>tài khoản Google có Drive 2TB</b>, mở <a className="text-brand-strong underline" target="_blank" rel="noopener noreferrer" href="https://console.cloud.google.com/projectcreate">console.cloud.google.com</a> → tạo project “NAMCHI”.</li>
+          <li>Vào <b>APIs &amp; Services → Library</b>, tìm “Google Drive API” → <b>Enable</b>.</li>
+          <li><b>OAuth consent screen</b>: chọn External, điền tên app “NAMCHI”, email hỗ trợ; ở mục <b>Test users</b> thêm chính email Drive đó. Sau đó bấm <b>Publish app</b> để token không hết hạn sau 7 ngày.</li>
+          <li><b>Credentials → Create credentials → OAuth client ID</b>, loại <b>Web application</b>. Ở <b>Authorized redirect URIs</b> dán đúng dòng:<div className="mt-1 select-all break-all rounded-md bg-surface px-2 py-1 font-mono text-[12.5px]">{callback}</div></li>
+          <li>Copy <b>Client ID</b> và <b>Client Secret</b> dán vào ô bên trái → Lưu → bấm <b>Kết nối Google Drive</b> → chọn tài khoản Drive → Cho phép.</li>
+        </ol>
+        <p className="mt-3 text-[13px] text-muted">Hệ thống chỉ có quyền với file do chính nó tạo (quyền drive.file), không đọc được file khác trong Drive của anh. Mọi file nằm trong thư mục “NAMCHI-ERP (file hệ thống)”, chia theo khách/loại/tháng.</p>
+      </Card>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase, q } from "@/lib/supabase";
 import { useSession } from "@/lib/session";
@@ -23,6 +24,8 @@ export default function FeesPage() {
   const rules = useQuery({ queryKey: ["fee-rules"], queryFn: () => q<Rule[]>(supabase.from("fee_rules").select("*").order("valid_from", { ascending: false })) });
   const manage = s.can("fee.manage");
   const allEnts = useQuery({ queryKey: ["all-entities-fee"], queryFn: () => q<{ id: string; customer_id: string; legal_name: string }[]>(supabase.from("customer_entities").select("id, customer_id, legal_name").is("deleted_at", null).order("legal_name")) });
+  const [entF, setEntF] = useState("");
+  useEffect(() => { setEntF(new URLSearchParams(window.location.search).get("entity") ?? ""); }, []);
   if (!s.isStaff) return <Empty title="Trang nội bộ" />;
   const now = Date.now();
   const ename = (id: string | null) => (id ? allEnts.data?.find((e) => e.id === id)?.legal_name ?? "?" : null);
@@ -32,6 +35,7 @@ export default function FeesPage() {
   return (
     <>
       <PageHeader eyebrow="Tài chính" title="Biểu phí" desc="Giá bán và giá vốn từng loại phí, có ngày hiệu lực. Đặt giá vốn tạo phiên bản mới, giữ giá bán. Đơn lấy mức đang hiệu lực tại ngày tạo đơn, nên đổi biểu phí không làm sai đơn cũ." />
+      {entF ? <div className="mb-4 rounded-xl bg-brand-soft px-4 py-3 text-sm">Đang đặt biểu phí riêng cho <b>{ename(entF)}</b>: chọn sẵn ở ô “Riêng công ty con” khi thêm mức phí. Phí nào không đặt riêng sẽ lấy mức của khách tổng hoặc mặc định.</div> : null}
       <div className="grid gap-5 xl:grid-cols-[1.6fr_1fr]">
         <div className="space-y-4">
           {ft.isLoading ? <Skeleton /> : (ft.data ?? []).map((t) => {
@@ -75,7 +79,7 @@ export default function FeesPage() {
             }}>
               <Field label="Loại phí"><select name="fee_type_id" className={inputCls}>{(ft.data ?? []).filter((t) => t.calc_method !== "actual").map((t) => <option key={t.id} value={t.id}>{t.name} ({METHOD[t.calc_method]})</option>)}</select></Field>
               <Field label="Áp cho khách"><select name="customer_id" className={inputCls}><option value="">Mọi khách (mặc định)</option>{(customers.data ?? []).map((c) => <option key={c.id} value={c.id}>{c.code} · {c.name}</option>)}</select></Field>
-              <Field label="Riêng công ty con" hint="Trống = áp cả khách tổng. Ưu tiên: công ty con > khách tổng > mặc định"><select name="entity_id" className={inputCls}><option value="">—</option>{(allEnts.data ?? []).map((e) => <option key={e.id} value={e.id}>{e.legal_name}</option>)}</select></Field>
+              <Field label="Riêng công ty con" hint="Trống = áp cả khách tổng. Ưu tiên: công ty con > khách tổng > mặc định"><select name="entity_id" key={entF} defaultValue={entF} className={inputCls}><option value="">—</option>{(allEnts.data ?? []).map((e) => <option key={e.id} value={e.id}>{e.legal_name}</option>)}</select></Field>
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Loại hóa đơn TQ"><select name="china_invoice_type" className={inputCls}><option value="">Mọi loại</option>{Object.entries(INVOICE_TYPE).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></Field>
                 <Field label="Nhóm hàng"><select name="goods_group" className={inputCls}><option value="">Mọi nhóm</option>{(groups.data ?? []).filter((g) => g.is_active && g.code !== "chung").map((g) => <option key={g.code} value={g.code}>{g.label}</option>)}</select></Field>

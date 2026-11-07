@@ -18,10 +18,10 @@ insert into public.orders (id, customer_id, entity_id, goods_cny, fx_rate, china
 select is((select china_tax_cny from public.orders where id = pg_temp.id('O1')), 200.00::numeric(18,2), 'T1 HĐPT 2% tự tính thuế 200 tệ');
 select is((select china_invoice_type from public.orders where id = pg_temp.id('O1')), 'HDPT', 'T2 loại gốc HĐPT để áp biểu phí');
 insert into public.orders (id, customer_id, entity_id, goods_cny, fx_rate, china_invoice_kind, china_tax_base_cny, china_tax_payer, status)
-values (pg_temp.id('O2'), pg_temp.id('LC'), pg_temp.id('SV'), 10000, 3600, 'hdcd', 4000, 'khach', 'cho_bao_gia');
+values (pg_temp.id('O2'), pg_temp.id('LC'), pg_temp.id('SV'), 10000, 3600, 'hdcd', 4000, 'cong_ty', 'cho_bao_gia');
 select is((select china_tax_cny from public.orders where id = pg_temp.id('O2')), 520.00::numeric(18,2), 'T3 HĐCD tính trên mốc 4.000 tệ × 13%');
 select lives_ok($$select public.build_statement(pg_temp.id('O2'), 'tam_tinh')$$, 'T4 lập phiếu HĐCD');
-select is((select count(*)::int from public.order_statement_lines l join public.order_statements s on s.id = l.statement_id where s.order_id = pg_temp.id('O2') and l.label like 'Thuế xuất%'), 0, 'T5 khách tự trả thuế HĐCD: không thu trên phiếu');
+select is((select count(*)::int from public.order_statement_lines l join public.order_statements s on s.id = l.statement_id where s.order_id = pg_temp.id('O2') and l.label like 'Thuế xuất%'), 0, 'T5 Nam Trung chịu thuế HĐCD: không thu khách trên phiếu');
 -- biểu phí công ty con được ưu tiên
 insert into public.fee_rules (fee_type_id, customer_id, entity_id, sell_rate, valid_from) select id, pg_temp.id('LC'), pg_temp.id('SV'), 9.5, now() - interval '1 day' from public.fee_types where code = 'MUA_HANG';
 select lives_ok($$select public.build_statement(pg_temp.id('O1'), 'tam_tinh')$$, 'T6 lập phiếu HĐPT');

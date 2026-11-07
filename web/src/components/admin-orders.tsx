@@ -9,7 +9,7 @@ import { useStatusDefs, statusOf, PHASES, PAYMENT_STATE, DELIVERY_STATE, INVOICE
 import { INVOICE_TYPE } from "@/lib/status";
 import { Badge, inputCls, Skeleton, Empty, btn, usePaged } from "./ui";
 import { InlineNote } from "./order-note";
-import { useFileUrl, fileBlobUrl } from "@/lib/files";
+import { UploadThumb } from "./upload-thumb";
 import { vnd, fmtNumber, fmtDate } from "@/lib/format";
 import { downloadCsv } from "@/lib/csv";
 
@@ -152,7 +152,7 @@ export function AdminOrderTable({ initial = {}, compactTitle }: { initial?: { st
                 return (
                   <tr key={o.id} className={`border-t border-line/70 align-top hover:bg-brand-soft/30 ${o.sla_overdue ? "bg-danger/[.03]" : ""} ${sel.has(o.id) ? "bg-brand-soft/40" : ""}`}>
                     <td className="px-2 py-3"><input type="checkbox" checked={sel.has(o.id)} onChange={(e) => { const n = new Set(sel); if (e.target.checked) n.add(o.id); else n.delete(o.id); setSel(n); }} /></td>
-                    <td className="px-1 py-3"><OrderThumb id={o.thumb_id} n={o.images_count} /></td>
+                    <td className="px-1 py-3"><UploadThumb id={o.thumb_id} n={o.images_count} entityType="order" refId={o.id} canUpload={s.can("attachment.upload")} /></td>
                     <td className="px-2.5 py-3">
                       <div className="flex flex-wrap items-center gap-1.5">
                         <Link href={`/don-hang/chi-tiet/?id=${o.id}`} className="font-semibold text-brand-strong hover:underline">{o.code}</Link>
@@ -192,14 +192,3 @@ export function AdminOrderTable({ initial = {}, compactTitle }: { initial?: { st
   );
 }
 
-// Ảnh đại diện đơn (ảnh đầu tiên của đơn hoặc dòng hàng)
-function OrderThumb({ id, n }: { id: string | null; n: number }) {
-  const url = useFileUrl(id ?? "", true, !!id);
-  if (!id) return <span className="flex h-14 w-14 items-center justify-center rounded-lg border border-dashed border-line text-[11px] text-muted">Chưa ảnh</span>;
-  return (
-    <button type="button" onClick={async () => window.open(await fileBlobUrl(id), "_blank", "noopener")} className="relative h-14 w-14 overflow-hidden rounded-lg border border-line bg-surface">
-      {url.data ? <img src={url.data} alt="" className="h-full w-full object-cover" /> : <span className="skeleton block h-full w-full" />}
-      {n > 1 ? <span className="absolute bottom-0 right-0 rounded-tl bg-ink/75 px-1 text-[11px] text-white">+{n - 1}</span> : null}
-    </button>
-  );
-}

@@ -34,7 +34,7 @@ export default function NewOrderPage() {
   const kinds = useLookups("china_invoice_kind");
   const [v, setV] = useState({
     customer_id: s.customer?.id ?? "", entity_id: s.entity?.id ?? "", customer_ref: "", source_channel: "", supplier_name: "", supplier_link: "", supplier_contact: "",
-    goods_group: "", goods_desc: "", china_invoice_type: "HDPT", china_invoice_kind: "hdpt_1", china_tax_base_cny: "", china_tax_payer: "cong_ty", goods_qty: "", goods_cny: "", fx_rate: "", vat_rate: "8", deposit_rate: "", order_week: "", expected_week: "",
+    goods_group: "", goods_desc: "", china_invoice_type: "HDPT", china_invoice_kind: "hdpt_1", china_tax_base_cny: "", china_tax_rate: "", china_tax_payer: "khach", goods_qty: "", goods_cny: "", fx_rate: "", vat_rate: "8", deposit_rate: "", order_week: "", expected_week: "",
     require_label_check: false, require_inspection: false, delivery_address: "", note: "", internal_note: "", cs_owner_id: "",
   });
   const set = (k: keyof typeof v) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
@@ -74,7 +74,7 @@ export default function NewOrderPage() {
     const payload: Record<string, unknown> = {
       customer_id: v.customer_id, entity_id: v.entity_id, customer_ref: opt(v.customer_ref), source_channel: opt(v.source_channel), supplier_name: opt(v.supplier_name),
       supplier_link: opt(v.supplier_link), supplier_contact: opt(v.supplier_contact), goods_group: opt(v.goods_group), goods_desc: opt(v.goods_desc),
-      china_invoice_kind: v.china_invoice_kind, china_tax_base_cny: v.china_tax_base_cny ? num(v.china_tax_base_cny) : null, china_tax_payer: v.china_tax_payer, goods_qty: num(v.goods_qty), goods_cny: num(v.goods_cny), order_week: opt(v.order_week),
+      china_invoice_kind: v.china_invoice_kind, china_tax_base_cny: v.china_tax_base_cny ? num(v.china_tax_base_cny) : null, china_tax_rate: v.china_tax_rate ? num(v.china_tax_rate) : null, china_tax_payer: v.china_tax_payer, goods_qty: num(v.goods_qty), goods_cny: num(v.goods_cny), order_week: opt(v.order_week),
       require_label_check: v.require_label_check, require_inspection: v.require_inspection, delivery_address: opt(v.delivery_address), note: opt(v.note),
       status: send ? "cho_bao_gia" : "dang_len_don", fx_rate: s.isStaff ? num(v.fx_rate) : 1,
     };
@@ -125,10 +125,9 @@ export default function NewOrderPage() {
               <Field label="Tổng số lượng"><input value={v.goods_qty} onChange={set("goods_qty")} inputMode="decimal" className={inputCls + " font-mono"} /></Field>
               <Field label="Loại hóa đơn Trung Quốc"><select value={v.china_invoice_kind} onChange={(e) => { const k = kinds.data?.find((x) => x.code === e.target.value); setV({ ...v, china_invoice_kind: e.target.value, china_invoice_type: String(k?.meta.base ?? "HDPT") }); }} className={inputCls}>
                 {(kinds.data ?? []).filter((k) => k.is_active).map((k) => <option key={k.code} value={k.code}>{k.label}{Number(k.meta.rate) ? ` (thuế ${k.meta.rate}%)` : ""}</option>)}</select></Field>
-              {kinds.data?.find((k) => k.code === v.china_invoice_kind)?.meta.has_base ? <>
-                <Field label="Mốc tiền tính thuế (tệ)" hint="Trống = tính trên tổng tiền hàng"><input value={v.china_tax_base_cny} onChange={set("china_tax_base_cny")} inputMode="decimal" className={inputCls} /></Field>
-                <Field label="Tiền thuế HĐ do ai trả"><select value={v.china_tax_payer} onChange={set("china_tax_payer")} className={inputCls}><option value="cong_ty">Nam Trung trả NCC / tạm ứng (thu lại khách)</option><option value="khach">Khách tự trả NCC</option></select></Field>
-              </> : null}
+              <Field label="Mốc tiền tính thuế (tệ)" hint="Trống = tổng tiền hàng"><input value={v.china_tax_base_cny} onChange={set("china_tax_base_cny")} inputMode="decimal" className={inputCls} /></Field>
+              <Field label="Thuế suất HĐ TQ (%)" hint={`Trống = ${kinds.data?.find((k) => k.code === v.china_invoice_kind)?.meta.rate ?? 0}% theo loại HĐ`}><input value={v.china_tax_rate} onChange={set("china_tax_rate")} inputMode="decimal" className={inputCls} /></Field>
+              <Field label="Ai chịu tiền thuế"><select value={v.china_tax_payer} onChange={set("china_tax_payer")} className={inputCls}><option value="khach">Khách chịu (thu trên phiếu)</option><option value="cong_ty">Nam Trung chịu (không thu khách)</option></select></Field>
               {s.isStaff ? <>
                 <Field label="Tỷ giá chốt *"><input value={v.fx_rate} onChange={set("fx_rate")} inputMode="decimal" className={inputCls + " font-mono"} /></Field>
                 <Field label="VAT tạm tính (%)"><input value={v.vat_rate} onChange={set("vat_rate")} inputMode="decimal" className={inputCls + " font-mono"} /></Field>
