@@ -17,6 +17,7 @@ import { OrderProfit } from "@/components/order-profit";
 import { OrderInvoices } from "@/components/order-invoices";
 import { OrderItems } from "@/components/order-items";
 import { OrderPackages } from "@/components/order-packages";
+import { DeliveryHistory } from "@/components/delivery-history";
 import { OrderChat } from "@/components/order-chat";
 import { FileDrop, AttachmentGallery } from "@/components/files";
 import { vnd, fmtNumber, fmtDate, fmtDateTime } from "@/lib/format";
@@ -25,7 +26,7 @@ import type { AdminOrder } from "@/components/admin-orders";
 
 type O = {
   id: string; code: string; customer_id: string; entity_id: string; customer_ref: string | null; source_channel: string | null; order_week: string | null; supplier_name: string | null;
-  supplier_link: string | null; supplier_contact: string | null; goods_group: string | null; goods_desc: string | null; china_invoice_type: string; goods_qty: number; goods_cny: number;
+  supplier_link: string | null; supplier_contact: string | null; goods_group: string | null; goods_desc: string | null; china_invoice_type: string; china_invoice_kind: string | null; china_tax_rate: number | null; china_tax_base_cny: number | null; china_tax_payer: string; goods_qty: number; goods_cny: number;
   fx_rate: number; china_tax_cny: number; weight_kg: number; cbm: number; packages: number; vat_rate: number; deposit_rate: number | null; status: string; expected_week: string | null;
   delay_reason: string | null; note: string | null; internal_note: string | null; cs_owner_id: string | null; require_label_check: boolean; require_inspection: boolean;
   delivery_address: string | null; created_at: string; submitted_at: string | null; row_version: number;
@@ -43,6 +44,7 @@ function Detail() {
   const groups = useLookups("goods_group");
   const sources = useLookups("order_source");
   const delays = useLookups("delay_reason");
+  const kinds = useLookups("china_invoice_kind");
   const staff = useStaff();
   const [tab, setTab] = useState<string>(sp.get("tab") ?? "tong-quan");
   const [edit, setEdit] = useState(false);
@@ -65,10 +67,10 @@ function Detail() {
           const g = (k: string) => String(f.get(k) ?? "").trim() || null;
           const nm = (k: string) => Number(String(f.get(k) ?? "").replace(/\s/g, "").replace(",", ".")) || 0;
           const upd: Record<string, unknown> = { customer_ref: g("customer_ref"), source_channel: g("source_channel"), supplier_name: g("supplier_name"), supplier_link: g("supplier_link"),
-            supplier_contact: g("supplier_contact"), goods_group: g("goods_group"), goods_desc: g("goods_desc"), china_invoice_type: f.get("china_invoice_type"), goods_qty: nm("goods_qty"),
+            supplier_contact: g("supplier_contact"), goods_group: g("goods_group"), goods_desc: g("goods_desc"), china_invoice_kind: f.get("china_invoice_kind"), china_tax_base_cny: g("china_tax_base_cny") ? nm("china_tax_base_cny") : null, china_tax_payer: f.get("china_tax_payer") ?? "cong_ty", goods_qty: nm("goods_qty"),
             goods_cny: nm("goods_cny"), order_week: g("order_week"), require_label_check: f.get("require_label_check") === "on", require_inspection: f.get("require_inspection") === "on",
             delivery_address: g("delivery_address"), note: g("note"), row_version: o.row_version };
-          if (s.isStaff) Object.assign(upd, { fx_rate: nm("fx_rate"), china_tax_cny: nm("china_tax_cny"), vat_rate: nm("vat_rate"), deposit_rate: g("deposit_rate") ? nm("deposit_rate") : null,
+          if (s.isStaff) Object.assign(upd, { fx_rate: nm("fx_rate"), china_tax_rate: g("china_tax_rate") ? nm("china_tax_rate") : null, vat_rate: nm("vat_rate"), deposit_rate: g("deposit_rate") ? nm("deposit_rate") : null,
             expected_week: g("expected_week"), delay_reason: g("delay_reason"), internal_note: g("internal_note"), cs_owner_id: g("cs_owner_id") });
           const { error } = await supabase.from("orders").update(upd).eq("id", o.id);
           if (error) return { error: viError(error) };
@@ -85,10 +87,12 @@ function Detail() {
             <Field label="Liên hệ NCC"><input name="supplier_contact" defaultValue={o.supplier_contact ?? ""} className={inputCls} /></Field>
             <Field label="Tiền hàng (tệ)"><input name="goods_cny" defaultValue={o.goods_cny} className={inputCls + " font-mono"} /></Field>
             <Field label="Số lượng"><input name="goods_qty" defaultValue={o.goods_qty} className={inputCls + " font-mono"} /></Field>
-            <Field label="HĐ Trung Quốc"><select name="china_invoice_type" defaultValue={o.china_invoice_type} className={inputCls}>{Object.entries(INVOICE_TYPE).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></Field>
+            <Field label="Loại hóa đơn TQ"><select name="china_invoice_kind" defaultValue={o.china_invoice_kind ?? ""} className={inputCls}>{(kinds.data ?? []).filter((k) => k.is_active).map((k) => <option key={k.code} value={k.code}>{k.label}</option>)}</select></Field>
+            <Field label="Mốc tiền tính thuế (tệ, chỉ HĐCD)"><input name="china_tax_base_cny" defaultValue={o.china_tax_base_cny ?? ""} className={inputCls} /></Field>
+            <Field label="Thuế HĐ do ai trả (HĐCD)"><select name="china_tax_payer" defaultValue={o.china_tax_payer} className={inputCls}><option value="cong_ty">Nam Trung trả / tạm ứng</option><option value="khach">Khách tự trả NCC</option></select></Field>
             {s.isStaff ? <>
               <Field label="Tỷ giá chốt"><input name="fx_rate" defaultValue={o.fx_rate} className={inputCls + " font-mono"} /></Field>
-              <Field label="Thuế xuất HĐ TQ (tệ)"><input name="china_tax_cny" defaultValue={o.china_tax_cny} className={inputCls + " font-mono"} /></Field>
+              <Field label="Thuế suất HĐ TQ (%)" hint="Mặc định theo loại HĐ"><input name="china_tax_rate" defaultValue={o.china_tax_rate ?? ""} className={inputCls} /></Field>
               <Field label="VAT (%)"><input name="vat_rate" defaultValue={o.vat_rate} className={inputCls + " font-mono"} /></Field>
               <Field label="Tỷ lệ cọc riêng (%)"><input name="deposit_rate" defaultValue={o.deposit_rate ?? ""} className={inputCls + " font-mono"} /></Field>
               <Field label="Dự kiến về (tuần)"><input name="expected_week" defaultValue={o.expected_week ?? ""} className={inputCls} /></Field>
@@ -107,8 +111,8 @@ function Detail() {
       ) : (
         <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-3">
           {([["Mã PO khách", o.customer_ref], ["Nguồn đơn", o.source_channel ? lookupLabel(sources.data, o.source_channel) : null], ["Nhóm hàng", lookupLabel(groups.data, o.goods_group)],
-            ["Shop / NCC", o.supplier_name], ["Liên hệ NCC", o.supplier_contact], ["HĐ Trung Quốc", INVOICE_TYPE[o.china_invoice_type]],
-            ["Tiền hàng", `${fmtNumber(o.goods_cny)} tệ`], ["Số lượng", fmtNumber(o.goods_qty)], ...(s.isStaff ? [["Tỷ giá chốt", fmtNumber(o.fx_rate)], ["Tiền hàng (VND)", vnd(Math.round(o.goods_cny * o.fx_rate))], ["Thuế xuất HĐ TQ", `${fmtNumber(o.china_tax_cny)} tệ`], ["Cọc riêng", o.deposit_rate != null ? `${o.deposit_rate}%` : "Theo cấu hình"]] : []),
+            ["Shop / NCC", o.supplier_name], ["Liên hệ NCC", o.supplier_contact], ["Hóa đơn TQ", `${lookupLabel(kinds.data, o.china_invoice_kind)}${o.china_tax_rate ? ` · ${fmtNumber(o.china_tax_rate)}%` : ""}`], ["Thuế xuất HĐ", `${fmtNumber(o.china_tax_cny)} tệ${o.china_tax_base_cny ? ` (mốc ${fmtNumber(o.china_tax_base_cny)} tệ)` : ""} · ${o.china_tax_payer === "khach" ? "khách tự trả" : "Nam Trung trả/tạm ứng"}`], ["Cần trả NCC", `${fmtNumber(Number(o.goods_cny) + (o.china_tax_payer === "khach" ? 0 : Number(o.china_tax_cny)))} tệ`],
+            ["Tiền hàng", `${fmtNumber(o.goods_cny)} tệ`], ["Số lượng", fmtNumber(o.goods_qty)], ...(s.isStaff ? [["Tỷ giá chốt", fmtNumber(o.fx_rate)], ["Tiền hàng (VND)", vnd(Math.round(o.goods_cny * o.fx_rate))], ["Cọc riêng", o.deposit_rate != null ? `${o.deposit_rate}%` : "Theo cấu hình"]] : []),
             ["Cân tính phí", `${fmtNumber(o.weight_kg)} kg`], ["Khối", `${fmtNumber(o.cbm)} m³`], ["Số kiện", fmtNumber(o.packages)], ["Tuần đặt", o.order_week], ["Dự kiến về", o.expected_week],
             ["Lý do chậm", o.delay_reason ? lookupLabel(delays.data, o.delay_reason) : null], ["CSKH", staff.data?.find((x) => x.user_id === o.cs_owner_id)?.full_name ?? null], ["Gửi đơn lúc", o.submitted_at ? fmtDateTime(o.submitted_at) : null]] as [string, string | null][]).map(([k, v]) => (
             <div key={k}><dt className="text-xs text-muted">{k}</dt><dd className="font-medium">{v || "—"}</dd></div>
@@ -164,8 +168,8 @@ function Detail() {
               {s.isStaff ? <Card title="Ghi chú nội bộ (NV)"><InlineNote orderId={o.id} kind="internal" value={o.internal_note} canEdit={s.can("order.write")} placeholder="+ Thêm ghi chú cho nhân viên" /></Card> : null}
               <Card title={s.isStaff ? "Ghi chú của khách" : "Ghi chú của bạn"}><InlineNote orderId={o.id} kind="customer" value={o.note} canEdit placeholder="+ Thêm ghi chú cho đơn" /></Card>
             </div>
-            <StatementSummary orderId={o.id} onOpen={() => setTab("tai-chinh")} />
             {info}
+            <StatementSummary orderId={o.id} onOpen={() => setTab("tai-chinh")} />
             <Card title="Ảnh & file của đơn"><div className="space-y-4"><FileDrop entityType="order" refId={o.id} /><AttachmentGallery entityType="order" refId={o.id} /></div></Card>
           </> : null}
           {tab === "hang" ? <OrderItems orderId={o.id} /> : null}
@@ -174,7 +178,7 @@ function Detail() {
             <OrderProfit orderId={o.id} />
           </> : null}
           {tab === "hoa-don" ? <OrderInvoices orderId={o.id} /> : null}
-          {tab === "kien" ? <OrderPackages orderId={o.id} orderCode={o.code} /> : null}
+          {tab === "kien" ? <><OrderPackages orderId={o.id} orderCode={o.code} /><DeliveryHistory orderId={o.id} /></> : null}
           {tab === "trao-doi" ? <Card title="Trao đổi trên đơn" className="xl:hidden"><OrderChat orderId={o.id} /></Card> : null}
           {tab === "lich-su" ? (
             <Card title="Lịch sử trạng thái">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase, q } from "@/lib/supabase";
@@ -65,8 +66,8 @@ export function NotificationBell() {
         <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M6 8a6 6 0 0112 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.9 1.9 0 003.4 0" /></svg>
         {unread ? <span className="absolute -right-1.5 -top-1.5 min-w-[20px] rounded-full bg-brand px-1 text-center text-[12px] font-bold leading-[20px] text-white">{unread > 99 ? "99+" : unread}</span> : null}
       </button>
-      {open ? (
-        <div className="fixed inset-0 z-[60] flex justify-end bg-ink/30 backdrop-blur-[1px]" onMouseDown={(e) => e.target === e.currentTarget && setOpen(false)}>
+      {open && typeof document !== "undefined" ? createPortal(
+        <div className="fixed inset-0 z-[100] flex justify-end bg-ink/30 backdrop-blur-[1px]" onMouseDown={(e) => e.target === e.currentTarget && setOpen(false)}>
           <aside className="flex h-full w-full max-w-[440px] flex-col bg-white shadow-2xl">
             <header className="flex items-center justify-between border-b border-line px-5 py-4">
               <div><div className="text-base font-semibold">Thông báo</div><div className="text-sm text-muted">{unread ? `${unread} chưa đọc` : "Đã đọc hết"}</div></div>
@@ -96,7 +97,7 @@ export function NotificationBell() {
               ))}
             </ul>
           </aside>
-        </div>
+        </div>, document.body
       ) : null}
     </>
   );

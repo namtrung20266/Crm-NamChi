@@ -9,10 +9,17 @@ import { ORDER_STATUS, INVOICE_TYPE } from "@/lib/status";
 import { PageHeader, Card, DataList, Badge, Empty, LinkButton, inputCls, Skeleton } from "@/components/ui";
 import { vnd, fmtDate, fmtNumber } from "@/lib/format";
 import { AdminOrderTable } from "@/components/admin-orders";
+import { CustomerOrderList } from "@/components/customer-orders";
 
 export default function OrdersPage() {
   const s = useSession();
-  if (!s.isStaff) return <CustomerOrders />;
+  if (!s.isStaff) return (
+    <>
+      <PageHeader eyebrow="Đơn của tôi" title="Đơn hàng" desc="Theo dõi trạng thái, thanh toán, kiện, giao hàng, hóa đơn từng đơn. Bấm mã đơn để xem chi tiết, trao đổi với Nam Trung."
+        actions={s.can("order.create_own") ? <LinkButton href="/don-hang/moi/">+ Tạo đơn</LinkButton> : null} />
+      <Card><CustomerOrderList /></Card>
+    </>
+  );
   return (
     <>
       <PageHeader eyebrow="Vận hành" title="Đơn hàng" desc="Toàn bộ đơn: tiến độ thanh toán, khai báo, kiện, giao hàng, hóa đơn trên một bảng. Bấm tiêu đề cột để sắp xếp."
